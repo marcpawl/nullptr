@@ -114,6 +114,7 @@ ENV CC=${CC:-"gcc"}
 ENV CXX=${CXX:-"g++"}
 
 # Include project
+WORKDIR /home/user/dev
 #ADD . /workspaces/cpp_starter_project
 #WORKDIR /workspaces/cpp_starter_project
 
