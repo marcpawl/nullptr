@@ -1,2 +1,4 @@
 add_subdirectory(sample_library)
 add_subdirectory(ftxui_sample)
+add_subdirectory(pointers_library)
+add_subdirectory(linked_list)
