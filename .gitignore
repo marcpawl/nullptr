@@ -34,3 +34,7 @@ $RECYCLE.BIN/
 .TemporaryItems
 ehthumbs.db
 Thumbs.db
+
+.bash_history
+.ccache
+.local
