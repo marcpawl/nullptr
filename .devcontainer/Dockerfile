@@ -11,7 +11,8 @@ RUN apt-get update -qq && export DEBIAN_FRONTEND=noninteractive && \
         software-properties-common wget apt-utils file zip \
         openssh-client gpg-agent socat rsync \
         make ninja-build git \
-        python3 python3-pip
+        python3 python3-pip \
+	ripgrep
 
 # Install conan
 RUN python3 -m pip install --upgrade pip setuptools && \
