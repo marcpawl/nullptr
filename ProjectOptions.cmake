@@ -4,7 +4,7 @@ include(CMakeDependentOption)
 include(CheckCXXCompilerFlag)
 
 
-macro(myproject_supports_sanitizers)
+macro(nullptr_supports_sanitizers)
   if((CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*" OR CMAKE_CXX_COMPILER_ID MATCHES ".*GNU.*") AND NOT WIN32)
     set(SUPPORTS_UBSAN ON)
   else()
@@ -18,183 +18,183 @@ macro(myproject_supports_sanitizers)
   endif()
 endmacro()
 
-macro(myproject_setup_options)
-  option(myproject_ENABLE_HARDENING "Enable hardening" ON)
-  option(myproject_ENABLE_COVERAGE "Enable coverage reporting" OFF)
+macro(nullptr_setup_options)
+  option(nullptr_ENABLE_HARDENING "Enable hardening" ON)
+  option(nullptr_ENABLE_COVERAGE "Enable coverage reporting" OFF)
   cmake_dependent_option(
-    myproject_ENABLE_GLOBAL_HARDENING
+    nullptr_ENABLE_GLOBAL_HARDENING
     "Attempt to push hardening options to built dependencies"
     ON
-    myproject_ENABLE_HARDENING
+    nullptr_ENABLE_HARDENING
     OFF)
 
-  myproject_supports_sanitizers()
+  nullptr_supports_sanitizers()
 
-  if(NOT PROJECT_IS_TOP_LEVEL OR myproject_PACKAGING_MAINTAINER_MODE)
-    option(myproject_ENABLE_IPO "Enable IPO/LTO" OFF)
-    option(myproject_WARNINGS_AS_ERRORS "Treat Warnings As Errors" OFF)
-    option(myproject_ENABLE_USER_LINKER "Enable user-selected linker" OFF)
-    option(myproject_ENABLE_SANITIZER_ADDRESS "Enable address sanitizer" OFF)
-    option(myproject_ENABLE_SANITIZER_LEAK "Enable leak sanitizer" OFF)
-    option(myproject_ENABLE_SANITIZER_UNDEFINED "Enable undefined sanitizer" OFF)
-    option(myproject_ENABLE_SANITIZER_THREAD "Enable thread sanitizer" OFF)
-    option(myproject_ENABLE_SANITIZER_MEMORY "Enable memory sanitizer" OFF)
-    option(myproject_ENABLE_UNITY_BUILD "Enable unity builds" OFF)
-    option(myproject_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
-    option(myproject_ENABLE_CPPCHECK "Enable cpp-check analysis" OFF)
-    option(myproject_ENABLE_PCH "Enable precompiled headers" OFF)
-    option(myproject_ENABLE_CACHE "Enable ccache" OFF)
+  if(NOT PROJECT_IS_TOP_LEVEL OR nullptr_PACKAGING_MAINTAINER_MODE)
+    option(nullptr_ENABLE_IPO "Enable IPO/LTO" OFF)
+    option(nullptr_WARNINGS_AS_ERRORS "Treat Warnings As Errors" OFF)
+    option(nullptr_ENABLE_USER_LINKER "Enable user-selected linker" OFF)
+    option(nullptr_ENABLE_SANITIZER_ADDRESS "Enable address sanitizer" OFF)
+    option(nullptr_ENABLE_SANITIZER_LEAK "Enable leak sanitizer" OFF)
+    option(nullptr_ENABLE_SANITIZER_UNDEFINED "Enable undefined sanitizer" OFF)
+    option(nullptr_ENABLE_SANITIZER_THREAD "Enable thread sanitizer" OFF)
+    option(nullptr_ENABLE_SANITIZER_MEMORY "Enable memory sanitizer" OFF)
+    option(nullptr_ENABLE_UNITY_BUILD "Enable unity builds" OFF)
+    option(nullptr_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
+    option(nullptr_ENABLE_CPPCHECK "Enable cpp-check analysis" OFF)
+    option(nullptr_ENABLE_PCH "Enable precompiled headers" OFF)
+    option(nullptr_ENABLE_CACHE "Enable ccache" OFF)
   else()
-    option(myproject_ENABLE_IPO "Enable IPO/LTO" ON)
-    option(myproject_WARNINGS_AS_ERRORS "Treat Warnings As Errors" ON)
-    option(myproject_ENABLE_USER_LINKER "Enable user-selected linker" OFF)
-    option(myproject_ENABLE_SANITIZER_ADDRESS "Enable address sanitizer" ${SUPPORTS_ASAN})
-    option(myproject_ENABLE_SANITIZER_LEAK "Enable leak sanitizer" OFF)
-    option(myproject_ENABLE_SANITIZER_UNDEFINED "Enable undefined sanitizer" ${SUPPORTS_UBSAN})
-    option(myproject_ENABLE_SANITIZER_THREAD "Enable thread sanitizer" OFF)
-    option(myproject_ENABLE_SANITIZER_MEMORY "Enable memory sanitizer" OFF)
-    option(myproject_ENABLE_UNITY_BUILD "Enable unity builds" OFF)
-    option(myproject_ENABLE_CLANG_TIDY "Enable clang-tidy" ON)
-    option(myproject_ENABLE_CPPCHECK "Enable cpp-check analysis" ON)
-    option(myproject_ENABLE_PCH "Enable precompiled headers" OFF)
-    option(myproject_ENABLE_CACHE "Enable ccache" ON)
+    option(nullptr_ENABLE_IPO "Enable IPO/LTO" ON)
+    option(nullptr_WARNINGS_AS_ERRORS "Treat Warnings As Errors" ON)
+    option(nullptr_ENABLE_USER_LINKER "Enable user-selected linker" OFF)
+    option(nullptr_ENABLE_SANITIZER_ADDRESS "Enable address sanitizer" ${SUPPORTS_ASAN})
+    option(nullptr_ENABLE_SANITIZER_LEAK "Enable leak sanitizer" OFF)
+    option(nullptr_ENABLE_SANITIZER_UNDEFINED "Enable undefined sanitizer" ${SUPPORTS_UBSAN})
+    option(nullptr_ENABLE_SANITIZER_THREAD "Enable thread sanitizer" OFF)
+    option(nullptr_ENABLE_SANITIZER_MEMORY "Enable memory sanitizer" OFF)
+    option(nullptr_ENABLE_UNITY_BUILD "Enable unity builds" OFF)
+    option(nullptr_ENABLE_CLANG_TIDY "Enable clang-tidy" ON)
+    option(nullptr_ENABLE_CPPCHECK "Enable cpp-check analysis" ON)
+    option(nullptr_ENABLE_PCH "Enable precompiled headers" OFF)
+    option(nullptr_ENABLE_CACHE "Enable ccache" ON)
   endif()
 
   if(NOT PROJECT_IS_TOP_LEVEL)
     mark_as_advanced(
-      myproject_ENABLE_IPO
-      myproject_WARNINGS_AS_ERRORS
-      myproject_ENABLE_USER_LINKER
-      myproject_ENABLE_SANITIZER_ADDRESS
-      myproject_ENABLE_SANITIZER_LEAK
-      myproject_ENABLE_SANITIZER_UNDEFINED
-      myproject_ENABLE_SANITIZER_THREAD
-      myproject_ENABLE_SANITIZER_MEMORY
-      myproject_ENABLE_UNITY_BUILD
-      myproject_ENABLE_CLANG_TIDY
-      myproject_ENABLE_CPPCHECK
-      myproject_ENABLE_COVERAGE
-      myproject_ENABLE_PCH
-      myproject_ENABLE_CACHE)
+      nullptr_ENABLE_IPO
+      nullptr_WARNINGS_AS_ERRORS
+      nullptr_ENABLE_USER_LINKER
+      nullptr_ENABLE_SANITIZER_ADDRESS
+      nullptr_ENABLE_SANITIZER_LEAK
+      nullptr_ENABLE_SANITIZER_UNDEFINED
+      nullptr_ENABLE_SANITIZER_THREAD
+      nullptr_ENABLE_SANITIZER_MEMORY
+      nullptr_ENABLE_UNITY_BUILD
+      nullptr_ENABLE_CLANG_TIDY
+      nullptr_ENABLE_CPPCHECK
+      nullptr_ENABLE_COVERAGE
+      nullptr_ENABLE_PCH
+      nullptr_ENABLE_CACHE)
   endif()
 
-  myproject_check_libfuzzer_support(LIBFUZZER_SUPPORTED)
-  if(LIBFUZZER_SUPPORTED AND (myproject_ENABLE_SANITIZER_ADDRESS OR myproject_ENABLE_SANITIZER_THREAD OR myproject_ENABLE_SANITIZER_UNDEFINED))
+  nullptr_check_libfuzzer_support(LIBFUZZER_SUPPORTED)
+  if(LIBFUZZER_SUPPORTED AND (nullptr_ENABLE_SANITIZER_ADDRESS OR nullptr_ENABLE_SANITIZER_THREAD OR nullptr_ENABLE_SANITIZER_UNDEFINED))
     set(DEFAULT_FUZZER ON)
   else()
     set(DEFAULT_FUZZER OFF)
   endif()
 
-  option(myproject_BUILD_FUZZ_TESTS "Enable fuzz testing executable" ${DEFAULT_FUZZER})
+  option(nullptr_BUILD_FUZZ_TESTS "Enable fuzz testing executable" ${DEFAULT_FUZZER})
 
 endmacro()
 
-macro(myproject_global_options)
-  if(myproject_ENABLE_IPO)
+macro(nullptr_global_options)
+  if(nullptr_ENABLE_IPO)
     include(cmake/InterproceduralOptimization.cmake)
-    myproject_enable_ipo()
+    nullptr_enable_ipo()
   endif()
 
-  myproject_supports_sanitizers()
+  nullptr_supports_sanitizers()
 
-  if(myproject_ENABLE_HARDENING AND myproject_ENABLE_GLOBAL_HARDENING)
+  if(nullptr_ENABLE_HARDENING AND nullptr_ENABLE_GLOBAL_HARDENING)
     include(cmake/Hardening.cmake)
     if(NOT SUPPORTS_UBSAN 
-       OR myproject_ENABLE_SANITIZER_UNDEFINED
-       OR myproject_ENABLE_SANITIZER_ADDRESS
-       OR myproject_ENABLE_SANITIZER_THREAD
-       OR myproject_ENABLE_SANITIZER_LEAK)
+       OR nullptr_ENABLE_SANITIZER_UNDEFINED
+       OR nullptr_ENABLE_SANITIZER_ADDRESS
+       OR nullptr_ENABLE_SANITIZER_THREAD
+       OR nullptr_ENABLE_SANITIZER_LEAK)
       set(ENABLE_UBSAN_MINIMAL_RUNTIME FALSE)
     else()
       set(ENABLE_UBSAN_MINIMAL_RUNTIME TRUE)
     endif()
-    message("${myproject_ENABLE_HARDENING} ${ENABLE_UBSAN_MINIMAL_RUNTIME} ${myproject_ENABLE_SANITIZER_UNDEFINED}")
-    myproject_enable_hardening(myproject_options ON ${ENABLE_UBSAN_MINIMAL_RUNTIME})
+    message("${nullptr_ENABLE_HARDENING} ${ENABLE_UBSAN_MINIMAL_RUNTIME} ${nullptr_ENABLE_SANITIZER_UNDEFINED}")
+    nullptr_enable_hardening(nullptr_options ON ${ENABLE_UBSAN_MINIMAL_RUNTIME})
   endif()
 endmacro()
 
-macro(myproject_local_options)
+macro(nullptr_local_options)
   if(PROJECT_IS_TOP_LEVEL)
     include(cmake/StandardProjectSettings.cmake)
   endif()
 
-  add_library(myproject_warnings INTERFACE)
-  add_library(myproject_options INTERFACE)
+  add_library(nullptr_warnings INTERFACE)
+  add_library(nullptr_options INTERFACE)
 
   include(cmake/CompilerWarnings.cmake)
-  myproject_set_project_warnings(
-    myproject_warnings
-    ${myproject_WARNINGS_AS_ERRORS}
+  nullptr_set_project_warnings(
+    nullptr_warnings
+    ${nullptr_WARNINGS_AS_ERRORS}
     ""
     ""
     ""
     "")
 
-  if(myproject_ENABLE_USER_LINKER)
+  if(nullptr_ENABLE_USER_LINKER)
     include(cmake/Linker.cmake)
-    myproject_configure_linker(myproject_options)
+    nullptr_configure_linker(nullptr_options)
   endif()
 
   include(cmake/Sanitizers.cmake)
-  myproject_enable_sanitizers(
-    myproject_options
-    ${myproject_ENABLE_SANITIZER_ADDRESS}
-    ${myproject_ENABLE_SANITIZER_LEAK}
-    ${myproject_ENABLE_SANITIZER_UNDEFINED}
-    ${myproject_ENABLE_SANITIZER_THREAD}
-    ${myproject_ENABLE_SANITIZER_MEMORY})
+  nullptr_enable_sanitizers(
+    nullptr_options
+    ${nullptr_ENABLE_SANITIZER_ADDRESS}
+    ${nullptr_ENABLE_SANITIZER_LEAK}
+    ${nullptr_ENABLE_SANITIZER_UNDEFINED}
+    ${nullptr_ENABLE_SANITIZER_THREAD}
+    ${nullptr_ENABLE_SANITIZER_MEMORY})
 
-  set_target_properties(myproject_options PROPERTIES UNITY_BUILD ${myproject_ENABLE_UNITY_BUILD})
+  set_target_properties(nullptr_options PROPERTIES UNITY_BUILD ${nullptr_ENABLE_UNITY_BUILD})
 
-  if(myproject_ENABLE_PCH)
+  if(nullptr_ENABLE_PCH)
     target_precompile_headers(
-      myproject_options
+      nullptr_options
       INTERFACE
       <vector>
       <string>
       <utility>)
   endif()
 
-  if(myproject_ENABLE_CACHE)
+  if(nullptr_ENABLE_CACHE)
     include(cmake/Cache.cmake)
-    myproject_enable_cache()
+    nullptr_enable_cache()
   endif()
 
   include(cmake/StaticAnalyzers.cmake)
-  if(myproject_ENABLE_CLANG_TIDY)
-    myproject_enable_clang_tidy(myproject_options ${myproject_WARNINGS_AS_ERRORS})
+  if(nullptr_ENABLE_CLANG_TIDY)
+    nullptr_enable_clang_tidy(nullptr_options ${nullptr_WARNINGS_AS_ERRORS})
   endif()
 
-  if(myproject_ENABLE_CPPCHECK)
-    myproject_enable_cppcheck(${myproject_WARNINGS_AS_ERRORS} "" # override cppcheck options
+  if(nullptr_ENABLE_CPPCHECK)
+    nullptr_enable_cppcheck(${nullptr_WARNINGS_AS_ERRORS} "" # override cppcheck options
     )
   endif()
 
-  if(myproject_ENABLE_COVERAGE)
+  if(nullptr_ENABLE_COVERAGE)
     include(cmake/Tests.cmake)
-    myproject_enable_coverage(myproject_options)
+    nullptr_enable_coverage(nullptr_options)
   endif()
 
-  if(myproject_WARNINGS_AS_ERRORS)
+  if(nullptr_WARNINGS_AS_ERRORS)
     check_cxx_compiler_flag("-Wl,--fatal-warnings" LINKER_FATAL_WARNINGS)
     if(LINKER_FATAL_WARNINGS)
       # This is not working consistently, so disabling for now
-      # target_link_options(myproject_options INTERFACE -Wl,--fatal-warnings)
+      # target_link_options(nullptr_options INTERFACE -Wl,--fatal-warnings)
     endif()
   endif()
 
-  if(myproject_ENABLE_HARDENING AND NOT myproject_ENABLE_GLOBAL_HARDENING)
+  if(nullptr_ENABLE_HARDENING AND NOT nullptr_ENABLE_GLOBAL_HARDENING)
     include(cmake/Hardening.cmake)
     if(NOT SUPPORTS_UBSAN 
-       OR myproject_ENABLE_SANITIZER_UNDEFINED
-       OR myproject_ENABLE_SANITIZER_ADDRESS
-       OR myproject_ENABLE_SANITIZER_THREAD
-       OR myproject_ENABLE_SANITIZER_LEAK)
+       OR nullptr_ENABLE_SANITIZER_UNDEFINED
+       OR nullptr_ENABLE_SANITIZER_ADDRESS
+       OR nullptr_ENABLE_SANITIZER_THREAD
+       OR nullptr_ENABLE_SANITIZER_LEAK)
       set(ENABLE_UBSAN_MINIMAL_RUNTIME FALSE)
     else()
       set(ENABLE_UBSAN_MINIMAL_RUNTIME TRUE)
     endif()
-    myproject_enable_hardening(myproject_options OFF ${ENABLE_UBSAN_MINIMAL_RUNTIME})
+    nullptr_enable_hardening(nullptr_options OFF ${ENABLE_UBSAN_MINIMAL_RUNTIME})
   endif()
 
 endmacro()

@@ -1,4 +1,4 @@
-#include <myproject/sample_library.hpp>
+#include "pointers.hpp"
 
 int pointers_library() noexcept
 {
