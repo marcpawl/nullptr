@@ -1,5 +1,6 @@
-# Add the executable
-add_executable(linked_list main.cpp)
+# Define the library
+add_library(linked_list_library STATIC include/doublelist.hpp)
+set_target_properties(linked_list_library PROPERTIES LINKER_LANGUAGE CXX)
 
-# Link the library to the executable
-target_link_libraries(linked_list PRIVATE pointers_library)
+# Specify the include directories for the library
+target_include_directories(linked_list_library PUBLIC include)
