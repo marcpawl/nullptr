@@ -32,10 +32,6 @@ function(nullptr_setup_dependencies)
     cpmaddpackage("gh:CLIUtils/CLI11@2.3.2")
   endif()
 
-  if(NOT TARGET ftxui::screen)
-    cpmaddpackage("gh:ArthurSonzogni/FTXUI@5.0.0")
-  endif()
-
   if(NOT TARGET tools::tools)
     cpmaddpackage("gh:lefticus/tools#update_build_system")
   endif()
