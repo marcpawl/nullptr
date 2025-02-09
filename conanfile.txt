@@ -1,0 +1,10 @@
+[requires]
+benchmark/1.6.1
+ms-gsl/4.1.0
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[layout]
+cmake_layout

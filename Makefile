@@ -16,5 +16,7 @@ cmake:
 
 .PHONY: compile
 compile:
+	conan profile detect
+	conan install . --build=missing
 	cmake --build /home/dev/build
 	cmake --build /home/dev/build -t test
