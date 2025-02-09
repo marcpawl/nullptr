@@ -19,6 +19,7 @@ compile: /home/dev/.conan2/profiles/default
 	conan install . --build=missing
 	cmake --build /home/dev/build
 	cmake --build /home/dev/build -t test
+	/home/dev/build/benchmarks/benchmarks
 
 /home/dev/.conan2/profiles/default:
 	conan profile detect

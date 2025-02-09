@@ -12,7 +12,8 @@ RUN apt-get update -qq && export DEBIAN_FRONTEND=noninteractive && \
         openssh-client gpg-agent socat rsync \
         make ninja-build git \
         python3 python3-pip \
-	ripgrep less
+	ripgrep less \
+        libbenchmark-dev
 
 # Install conan
 

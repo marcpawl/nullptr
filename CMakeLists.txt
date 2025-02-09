@@ -119,3 +119,6 @@ set(CPACK_PACKAGE_FILE_NAME
 )
 
 include(CPack)
+
+find_package(benchmark REQUIRED)
+add_subdirectory(benchmarks)
