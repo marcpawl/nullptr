@@ -17,3 +17,4 @@ cmake:
 .PHONY: compile
 compile:
 	cmake --build /home/dev/build
+	cmake --build /home/dev/build -t test
