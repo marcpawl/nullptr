@@ -1,5 +1,5 @@
 # [Choice] bionic (18.04), focal (20.04)
-ARG VARIANT="focal"
+ARG VARIANT="jammy"
 FROM ubuntu:${VARIANT}
 
 # Restate the variant to use it later on in the llvm and cmake installations
@@ -15,9 +15,6 @@ RUN apt-get update -qq && export DEBIAN_FRONTEND=noninteractive && \
 	ripgrep less
 
 # Install conan
-RUN python3 -m pip install --upgrade pip setuptools && \
-    python3 -m pip install conan && \
-    conan --version
 
 # By default, anything you run in Docker is done as superuser.
 # Conan runs some install commands as superuser, and will prepend `sudo` to
@@ -27,6 +24,11 @@ ENV CONAN_SYSREQUIRES_SUDO 0
 # a few dependencies. This flag allows Conan to proceed with these installations;
 # leaving this flag undefined can cause some installation failures.
 ENV CONAN_SYSREQUIRES_MODE enabled
+RUN apt-get install -y python3-venv 
+RUN python3 -m venv /opt/conan-venv
+RUN /opt/conan-venv/bin/pip install conan
+RUN ln -s /opt/conan-venv/bin/conan /usr/local/bin/conan
+RUN conan --version
 
 # User-settable versions:
 # This Dockerfile should support gcc-[7, 8, 9, 10, 11] and 
