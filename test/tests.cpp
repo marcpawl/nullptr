@@ -1,9 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
+#include "doublelist.hpp"
 
 
 
 
-TEST_CASE("Factorials are computed", "[factorial]")
+TEST_CASE("Constructor", "[constructor]")
 {
-	// TODO
+	SortedDoublyLinkedList const sut;
 }

@@ -1,2 +1,2 @@
 add_subdirectory(pointers_library)
-add_subdirectory(linked_list)
+add_subdirectory(linked_list_library)
