@@ -25,6 +25,7 @@ target_link_libraries(
   PRIVATE nullptr::nullptr_warnings
           nullptr::nullptr_options
           linked_list_library
+          pointers_library
           Catch2::Catch2WithMain)
 
 if(WIN32 AND BUILD_SHARED_LIBS)

@@ -36,4 +36,6 @@ function(nullptr_setup_dependencies)
     cpmaddpackage("gh:lefticus/tools#update_build_system")
   endif()
 
+  cpmaddpackage("gh:microsoft/GSL@4.1.0")
+
 endfunction()

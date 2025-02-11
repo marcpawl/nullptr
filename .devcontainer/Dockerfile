@@ -124,7 +124,5 @@ ENV CXX=${CXX:-"g++"}
 RUN adduser dev
 USER dev
 WORKDIR /home/dev
-#ADD . /workspaces/cpp_starter_project
-#WORKDIR /workspaces/cpp_starter_project
 
 CMD ["/bin/bash"]
