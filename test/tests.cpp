@@ -98,6 +98,8 @@ static void delete_me(gsl::owner<Vocal *> &owner)
 
 TEST_CASE("delete_me", "[owner]")
 {
+  Vocal * unknown { new Vocal(__LINE__) };
+  delete_me(unknown);
   gsl::owner<Vocal *> owner{ new Vocal(__LINE__) };
   delete_me(owner);
 }
@@ -105,6 +107,7 @@ TEST_CASE("delete_me", "[owner]")
 static void owner_copy(gsl::owner<Vocal *> thief)
 {
   std::clog << "thief=" << thief << '\n';
+  // we are allowed to delete thief since we own the pointer
 }
 
 TEST_CASE("copy", "[owner]")
@@ -118,7 +121,7 @@ TEST_CASE("copy", "[owner]")
 }
 
 ///////////////////////////////////////////////////////////////////////
-// nonowner
+// mp::nonowner
 ///////////////////////////////////////////////////////////////////////
 
 static void talk(mp::nonowner<Vocal *> nonowner) { nonowner->hello(); }
@@ -153,6 +156,43 @@ TEST_CASE("nonowner", "[nonowner]")
 #endif
 }
 
+///////////////////////////////////////////////////////////////////////
+//  mp::borrower
+//
+// Same as owner, but changes the errors from clang-tidy to compile 
+// time
+///////////////////////////////////////////////////////////////////////
+
+TEST_CASE("borrower", "[borrower]")
+{
+  gsl::owner<Vocal *> owner{ new Vocal(__LINE__) };
+  mp::borrower<Vocal *> const borrower{owner};
+
+#if 0
+  // no implcit conversion to raw pointer
+  // explcitly deleted
+  legacy(borrower);
+#else
+  legacy(borrower.get());
+#endif
+
+#if 0
+  Vocal const * const raw = borrower;
+  raw->hello();
+#else
+Vocal const * const raw = borrower.get();
+raw->hello();
+#endif
+
+#if 0
+	//  error: cannot delete expression of type 'mp::borrower<Vocal *>
+	delete borrower;
+#else
+  delete owner;
+#endif
+}
+
+ 
 ///////////////////////////////////////////////////////////////////////
 // std::unique_ptr
 ///////////////////////////////////////////////////////////////////////
