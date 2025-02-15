@@ -13,7 +13,7 @@ RUN apt-get update -qq && export DEBIAN_FRONTEND=noninteractive && \
         make ninja-build git \
         python3 python3-pip \
 	ripgrep less \
-        libbenchmark-dev
+        libbenchmark-dev sudo
 
 # Install conan
 
@@ -122,7 +122,8 @@ ENV CXX=${CXX:-"g++"}
 
 # Include project
 RUN adduser dev
-USER dev
+RUN echo "dev ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 WORKDIR /home/dev
+USER dev
+CMD "/bin/bash"
 
-CMD ["/bin/bash"]
