@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include <gsl/gsl>
 
 namespace marcpawl {
@@ -24,7 +25,7 @@ template <class T>
 class borrower
 {
 public:
-    static_assert(gsl::details::is_comparable_to_nullptr<T>::value, "T cannot be compared to nullptr.");
+    static_assert(std::is_pointer<T>::value, "T Must be pointer.");
 
     borrower()
 	    : ptr_(nullptr)
