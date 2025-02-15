@@ -19,6 +19,8 @@ endif()
 
 include(${Catch2_SOURCE_DIR}/extras/Catch.cmake)
 
+# add_compile_options(-Xclang -fdump-record-layouts)
+
 add_executable(tests tests.cpp)
 target_link_libraries(
   tests
