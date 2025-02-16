@@ -27,45 +27,37 @@ class borrower
 public:
     static_assert(std::is_pointer<T>::value, "T Must be pointer.");
 
-    borrower()
-	    : ptr_(nullptr)
-    {}
+    explicit borrower() = default;
 
-    template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    explicit borrower(U&& u) noexcept(std::is_nothrow_move_constructible<T>::value) : ptr_(std::forward<U>(u))
-    {
-    }
+    explicit borrower(T ptr) noexcept : ptr_(ptr) {}
+    
+    template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>  
+    explicit borrower(borrower<U> const& ptr) noexcept 
+        : ptr_(ptr.get())
+        {}
 
-    template <typename = std::enable_if_t<!std::is_same<std::nullptr_t, T>::value>>
-    explicit constexpr borrower(T u) noexcept(std::is_nothrow_move_constructible<T>::value) : ptr_(std::move(u))
-    {
-    }
+     template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>  
+        explicit  borrower(borrower<U>&& other) noexcept
+          : ptr_(other.get())
+          {}
 
-    template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    explicit borrower(const borrower<U>& other) noexcept(std::is_nothrow_move_constructible<T>::value) : borrower(other.get())
-    {}
+~borrower() = default;
 
-    borrower(const borrower& other) = default;
-    borrower& operator=(const borrower& other) = default;
-    constexpr gsl::details::value_or_reference_return_t<T> get() const
-        noexcept(noexcept(gsl::details::value_or_reference_return_t<T>{std::declval<T&>()}))
-    {
+template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>  
+borrower<T>& operator=(borrower<U> const& other) noexcept
+  {
+    if (this == other) { return *this; }
+    ptr_ = other.get();
+    return *this;
+  }
+
+    constexpr T get() const noexcept {
         return ptr_;
     }
 
-    constexpr operator T() const = delete;
+//    constexpr operator T() const = delete;
     constexpr decltype(auto) operator->() const { return get(); }
     constexpr decltype(auto) operator*() const { return *get(); }
-
-    explicit borrower(std::nullptr_t)
-	    : ptr_(nullptr)
-    {}
-
-    borrower& operator=(std::nullptr_t) 
-    {
-	    ptr_ = nullptr;
-	    return *this;
-    }
 
     // unwanted operators...pointers only point to single objects!
     borrower& operator++() = delete;
@@ -79,7 +71,7 @@ public:
     void operator delete(void*, size_t) = delete;
 
 private:
-    T ptr_;
+    T ptr_ = nullptr;
 };
 
 template <class T>
