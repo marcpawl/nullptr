@@ -65,10 +65,10 @@ namespace pointers {
     }
 
     constexpr T get() const noexcept { return ptr_; }
-
-    //    constexpr operator T() const = delete;
     constexpr decltype(auto) operator->() const { return get(); }
     constexpr decltype(auto) operator*() const { return *get(); }
+
+    operator bool() const { return ptr_ != nullptr; }
 
     // unwanted operators...pointers only point to single objects!
     borrower &operator++() = delete;

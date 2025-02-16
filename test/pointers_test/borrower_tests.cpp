@@ -317,11 +317,6 @@ TEST_CASE("comparison operator", "[borrower]")
     REQUIRE(borrower0 != nullptr);
     REQUIRE_FALSE(nullptr != null_borrower);
     REQUIRE(nullptr != borrower0);
-
-    REQUIRE(null_borrower == 0);
-    REQUIRE_FALSE(borrower0 == 0);
-    REQUIRE(0 == null_borrower);
-    REQUIRE_FALSE(0 == borrower0);
   }
   delete owner1;
   delete owner0;
@@ -370,4 +365,23 @@ TEST_CASE("reference", "[borrower]")
     REQUIRE(*owner == 43);
   }
 }
+
+
+TEST_CASE("bool", "[borrower]")
+{
+  SECTION("not_null")
+  {
+    std::unique_ptr<int> owner = std::make_unique<int>(42);
+    mp::borrower<int *> borrower = mp::make_borrower<int *>(owner.get());
+    bool const not_null = borrower;
+    REQUIRE(not_null);
+  }
+  SECTION("null")
+  {
+    mp::borrower<int *> borrower = mp::make_borrower<int *>(nullptr);
+    bool const not_null = borrower;
+    REQUIRE_FALSE(not_null);
+  }
+}
+
 // NOLINTEND (cppcoreguidelines-avoid-magic-numbers)
