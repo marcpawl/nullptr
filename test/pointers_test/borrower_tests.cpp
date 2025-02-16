@@ -305,8 +305,9 @@ TEST_CASE("comparison operator", "[borrower]")
     REQUIRE(b0gte1 ^ b1gte0);
     REQUIRE(borrower0 <= borrower0);
   }
-  SECTION("nullptr") {
-    mp::borrower<int*> null_borrower{nullptr};
+  SECTION("nullptr")
+  {
+    mp::borrower<int *> null_borrower{ nullptr };
     REQUIRE(null_borrower == nullptr);
     REQUIRE_FALSE(borrower0 == nullptr);
     REQUIRE(nullptr == null_borrower);
@@ -316,6 +317,11 @@ TEST_CASE("comparison operator", "[borrower]")
     REQUIRE(borrower0 != nullptr);
     REQUIRE_FALSE(nullptr != null_borrower);
     REQUIRE(nullptr != borrower0);
+
+    REQUIRE(null_borrower == 0);
+    REQUIRE_FALSE(borrower0 == 0);
+    REQUIRE(0 == null_borrower);
+    REQUIRE_FALSE(0 == borrower0);
   }
   delete owner1;
   delete owner0;
@@ -333,27 +339,35 @@ TEST_CASE("hashing", "[borrower]")
 
 void not_null_borrower(gsl::not_null<mp::borrower<int *>> borrower)
 {
-    *borrower = 43;
+  *borrower = 43;
 }
 
 TEST_CASE("not_null", "[borrower]")
 {
-    std::unique_ptr<int> owner = std::make_unique<int>(42);
-    not_null_borrower(mp::make_borrower<int*>(owner.get()));
-    REQUIRE(*owner == 43);
+  std::unique_ptr<int> owner = std::make_unique<int>(42);
+  not_null_borrower(mp::make_borrower<int *>(owner.get()));
+  REQUIRE(*owner == 43);
 }
 
-void reference(int& borrower)
-{
-  borrower = 43;
-}
+void reference(int &borrower) { borrower = 43; }
 
 TEST_CASE("reference", "[borrower]")
 {
+  SECTION("not_null")
+  {
     std::unique_ptr<int> owner = std::make_unique<int>(42);
-    gsl::not_null<mp::borrower<int*>> borrower = mp::make_borrower<int*>(owner.get());
+    gsl::not_null<mp::borrower<int *>> borrower =
+      mp::make_borrower<int *>(owner.get());
     reference(*borrower);
     REQUIRE(*owner == 43);
+  }
+  SECTION("strict_not_null")
+  {
+    std::unique_ptr<int> owner = std::make_unique<int>(44);
+    gsl::strict_not_null<mp::borrower<int *>> borrower =
+      gsl::make_strict_not_null(mp::make_borrower<int *>(owner.get()));
+    reference(*borrower);
+    REQUIRE(*owner == 43);
+  }
 }
-
 // NOLINTEND (cppcoreguidelines-avoid-magic-numbers)
