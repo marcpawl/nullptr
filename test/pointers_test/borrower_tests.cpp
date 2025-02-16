@@ -1,6 +1,6 @@
-#include <sstream>
-#include <catch2/catch_test_macros.hpp>
 #include "pointers.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <sstream>
 
 namespace mp = marcpawl::pointers;
 
@@ -152,9 +152,9 @@ TEST_CASE("assignment", "[borrower]")
   {
     gsl::owner<Parent *> owner0{ new Parent() };
     gsl::owner<Parent *> owner1{ new Parent() };
-    mp::borrower<Parent *>   parent1(owner0);
-    mp::borrower<Parent *> const  parent2(owner1);
-    parent1  = parent2;
+    mp::borrower<Parent *> parent1(owner0);
+    mp::borrower<Parent *> const parent2(owner1);
+    parent1 = parent2;
     REQUIRE(owner1 == parent1.get());
     REQUIRE(owner1 == parent2.get());
     delete owner1;
@@ -166,7 +166,7 @@ TEST_CASE("assignment", "[borrower]")
     gsl::owner<Child *> owner2(new Child());
     // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
     gsl::owner<Child *> const owner3(new Child());
-    mp::borrower<Child *>  child1(owner2);
+    mp::borrower<Child *> child1(owner2);
     mp::borrower<Child *> const child2(owner3);
     child1 = child2;
     REQUIRE(child1.get() == owner3);
@@ -182,10 +182,10 @@ TEST_CASE("move assignment", "[borrower]")
   {
     gsl::owner<Parent *> owner0{ new Parent() };
     gsl::owner<Parent *> owner1{ new Parent() };
-    mp::borrower<Parent *>   parent1(owner0);
-    mp::borrower<Parent *> const  parent2(owner1);
+    mp::borrower<Parent *> parent1(owner0);
+    mp::borrower<Parent *> const parent2(owner1);
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
-    parent1  = std::move(parent2);
+    parent1 = std::move(parent2);
     REQUIRE(owner1 == parent1.get());
     delete owner1;
     delete owner0;
@@ -196,7 +196,7 @@ TEST_CASE("move assignment", "[borrower]")
     gsl::owner<Child *> owner2(new Child());
     // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
     gsl::owner<Child *> const owner3(new Child());
-    mp::borrower<Child *>  child1(owner2);
+    mp::borrower<Child *> child1(owner2);
     mp::borrower<Child *> const child2(owner3);
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
     child1 = std::move(child2);
@@ -208,45 +208,103 @@ TEST_CASE("move assignment", "[borrower]")
 
 TEST_CASE("arrow operator", "[borrower]")
 {
-    gsl::owner<Child *> owner0{ new Child() };
-    mp::borrower< Parent*> const borrower = 
-        mp::make_borrower<Parent*>(owner0);
-    REQUIRE(borrower->value == owner0->value);
-    delete owner0;
+  gsl::owner<Child *> owner0{ new Child() };
+  mp::borrower<Parent *> const borrower = mp::make_borrower<Parent *>(owner0);
+  REQUIRE(borrower->value == owner0->value);
+  delete owner0;
 }
 
 TEST_CASE("dereference operator", "[borrower]")
 {
-    gsl::owner<Child *> owner0{ new Child() };
-    mp::borrower< Parent*> const borrower = 
-        mp::make_borrower<Parent*>(owner0);
-    REQUIRE((*borrower).value == owner0->value);
-    delete owner0;
+  gsl::owner<Child *> owner0{ new Child() };
+  mp::borrower<Parent *> const borrower = mp::make_borrower<Parent *>(owner0);
+  REQUIRE((*borrower).value == owner0->value);
+  delete owner0;
 }
 
 TEST_CASE("make_borrower", "[borrower]")
 {
-    gsl::owner<Child *> owner0{ new Child() };
-    mp::borrower< Parent*> const borrower = 
-        mp::make_borrower<Parent*>(owner0);
-    REQUIRE(borrower.get() == owner0);
-    delete owner0;
+  gsl::owner<Child *> owner0{ new Child() };
+  mp::borrower<Parent *> const borrower1 = mp::make_borrower<Parent *>(owner0);
+  REQUIRE(borrower1.get() == owner0);
+  mp::borrower<Parent *> const borrower2 = mp::make_borrower<Parent *>(owner0);
+  REQUIRE(borrower2.get() == owner0);
+  delete owner0;
 }
 
 #if !defined(GSL_NO_IOSTREAMS)
 TEST_CASE("stream operator", "[borrower]")
 {
-    gsl::owner<Child *> owner0{ new Child() };
-    mp::borrower< Parent*> const borrower = 
-        mp::make_borrower<Parent*>(owner0);
-    std::ostringstream actual_stream;
-    actual_stream << borrower;
-    std::ostringstream expected_stream;
-    expected_stream << borrower.get();
-    std::string actual =actual_stream.str();
-    std::string expected = expected_stream.str();
-    REQUIRE(actual == expected);
-    delete owner0;
+  gsl::owner<Child *> owner0{ new Child() };
+  mp::borrower<Parent *> const borrower = mp::make_borrower<Parent *>(owner0);
+  std::ostringstream actual_stream;
+  actual_stream << borrower;
+  std::ostringstream expected_stream;
+  expected_stream << borrower.get();
+  std::string actual = actual_stream.str();
+  std::string expected = expected_stream.str();
+  REQUIRE(actual == expected);
+  delete owner0;
 }
 #endif
 
+TEST_CASE("comparison operator", "[borrower]")
+{
+  gsl::owner<Child *> owner0{ new Child() };
+  mp::borrower<Parent *> const borrower0 = mp::make_borrower<Parent *>(owner0);
+  gsl::owner<Child *> owner1{ new Child() };
+  mp::borrower<Child *> const borrower1 = mp::make_borrower<Child *>(owner1);
+  SECTION("equality")
+  {
+    REQUIRE(borrower0 == borrower0);
+    REQUIRE_FALSE(borrower0 == borrower1);
+    REQUIRE_FALSE(borrower1 == borrower0);
+    REQUIRE_FALSE(borrower0 != borrower0);
+    REQUIRE(borrower1 != borrower0);
+    REQUIRE(borrower0 != borrower1);
+    // NOLINTNEXTLINE (misc-redundant-expression)
+    REQUIRE(borrower0 == borrower0);
+    REQUIRE_FALSE(borrower0 == borrower1);
+    REQUIRE_FALSE(borrower1 == borrower0);
+    // NOLINTNEXTLINE (misc-redundant-expression)
+    REQUIRE_FALSE(borrower0 != borrower0);
+    REQUIRE(borrower1 != borrower0);
+    REQUIRE(borrower0 != borrower1);
+  }
+  SECTION("less than")
+  {
+    bool const b0lt1 = borrower0 < borrower1;
+    bool const b1lt0 = borrower1 < borrower0;
+    bool const blt = b0lt1 || b1lt0;
+    REQUIRE(blt);
+    REQUIRE(b0lt1 ^ b1lt0);
+  }
+  SECTION("greater than")
+  {
+    bool const b0gt1 = borrower0 > borrower1;
+    bool const b1gt0 = borrower1 > borrower0;
+    bool const bgt = b0gt1 || b1gt0;
+    REQUIRE(bgt);
+    REQUIRE(b0gt1 ^ b1gt0);
+  }
+  SECTION("less than equal")
+  {
+    bool const b0lte1 = borrower0 <= borrower1;
+    bool const b1lte0 = borrower1 <= borrower0;
+    bool const blte = b0lte1 || b1lte0;
+    REQUIRE(blte);
+    REQUIRE(b0lte1 ^ b1lte0);
+    REQUIRE(borrower0 <= borrower0);
+  }
+  SECTION("greater than equal")
+  {
+    bool const b0gte1 = borrower0 >= borrower1;
+    bool const b1gte0 = borrower1 >= borrower0;
+    bool const bgte = b0gte1 || b1gte0;
+    REQUIRE(bgte);
+    REQUIRE(b0gte1 ^ b1gte0);
+    REQUIRE(borrower0 <= borrower0);
+  }
+  delete owner1;
+  delete owner0;
+}
