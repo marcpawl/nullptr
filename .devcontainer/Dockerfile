@@ -13,7 +13,10 @@ RUN apt-get update -qq && export DEBIAN_FRONTEND=noninteractive && \
         make ninja-build git \
         python3 python3-pip \
 	ripgrep less \
-        libbenchmark-dev sudo
+        libbenchmark-dev sudo \
+        neovim emacs nano \
+        doxygen graphviz ccache cppcheck \
+        meld
 
 # Install conan
 
@@ -74,16 +77,6 @@ RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/nul
     apt-add-repository -y "deb ${CMAKE_URL} ${CMAKE_PKG} main" && \
     apt-get update -qq && export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y --no-install-recommends cmake cmake-curses-gui
-
-# Install editors
-RUN apt-get update -qq && export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y --no-install-recommends \
-        neovim emacs nano
-
-# Install optional dependecies
-RUN apt-get update -qq && export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y --no-install-recommends \
-        doxygen graphviz ccache cppcheck
 
 # Install include-what-you-use
 ENV IWYU=/home/iwyu

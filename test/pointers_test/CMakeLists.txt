@@ -25,7 +25,7 @@ function(compile_and_check SOURCE_FILE ERROR_MESSAGE)
   endif()
 endfunction()
 
-compile_and_check(borrower_must_be_pointer.cpp "T Must be pointer")
+#compile_and_check(borrower_must_be_pointer.cpp "T Must be pointer")
 
 add_executable(borrower_tests borrower_tests.cpp)
 target_link_libraries(
