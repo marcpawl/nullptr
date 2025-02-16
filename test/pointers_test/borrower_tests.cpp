@@ -331,15 +331,28 @@ TEST_CASE("hashing", "[borrower]")
   delete owner0;
 }
 
-void not_null_borrower(gsl::not_null<mp::borrower<int *>> owner)
+void not_null_borrower(gsl::not_null<mp::borrower<int *>> borrower)
 {
-    *owner = 43;
+    *borrower = 43;
 }
 
 TEST_CASE("not_null", "[borrower]")
 {
     std::unique_ptr<int> owner = std::make_unique<int>(42);
     not_null_borrower(mp::make_borrower<int*>(owner.get()));
+    REQUIRE(*owner == 43);
+}
+
+void reference(int& borrower)
+{
+  borrower = 43;
+}
+
+TEST_CASE("reference", "[borrower]")
+{
+    std::unique_ptr<int> owner = std::make_unique<int>(42);
+    gsl::not_null<mp::borrower<int*>> borrower = mp::make_borrower<int*>(owner.get());
+    reference(*borrower);
     REQUIRE(*owner == 43);
 }
 
