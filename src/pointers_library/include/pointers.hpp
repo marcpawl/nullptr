@@ -109,12 +109,17 @@ concept Comparable = requires(T a, U b) {
     { a< b } -> std::convertible_to<bool>;
 };
 
-// Function template that requires the types to not be equality comparable
 template <typename T, typename U>
 requires (EqualityComparable<T, U>)
   auto operator==( borrower<T> const &lhs,  borrower<U> const &rhs) noexcept
   {
     return lhs.get() == rhs.get();
+  }
+
+  template <typename T>
+  auto operator==( borrower<T> const &lhs,  std::nullptr_t) noexcept
+  {
+    return lhs.get() == nullptr;
   }
 
   template <typename T, typename U>

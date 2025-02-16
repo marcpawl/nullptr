@@ -4,6 +4,8 @@
 
 namespace mp = marcpawl::pointers;
 
+// NOLINTBEGIN (cppcoreguidelines-avoid-magic-numbers)
+
 TEST_CASE("default constructor", "[borrower]")
 {
   mp::borrower<int *> const borrower{};
@@ -75,7 +77,6 @@ TEST_CASE("delete child", "")
 
 TEST_CASE("explicit constructor", "[borrower]")
 {
-  // NOLINTBEGIN (cppcoreguidelines-avoid-magic-numbers)
   SECTION("from owner")
   {
     gsl::owner<int *> owner{ new int(5) };
@@ -97,7 +98,6 @@ TEST_CASE("explicit constructor", "[borrower]")
     REQUIRE(borrower2.get() != nullptr);
     REQUIRE(*borrower2.get() == 4);
   }
-  // NOLINTEND (cppcoreguidelines-avoid-magic-numbers)
 }
 
 TEST_CASE("copy constructor", "[borrower]")
@@ -305,6 +305,18 @@ TEST_CASE("comparison operator", "[borrower]")
     REQUIRE(b0gte1 ^ b1gte0);
     REQUIRE(borrower0 <= borrower0);
   }
+  SECTION("nullptr") {
+    mp::borrower<int*> null_borrower{nullptr};
+    REQUIRE(null_borrower == nullptr);
+    REQUIRE_FALSE(borrower0 == nullptr);
+    REQUIRE(nullptr == null_borrower);
+    REQUIRE_FALSE(nullptr == borrower0);
+
+    REQUIRE_FALSE(null_borrower != nullptr);
+    REQUIRE(borrower0 != nullptr);
+    REQUIRE_FALSE(nullptr != null_borrower);
+    REQUIRE(nullptr != borrower0);
+  }
   delete owner1;
   delete owner0;
 }
@@ -318,3 +330,17 @@ TEST_CASE("hashing", "[borrower]")
   REQUIRE(actual == expected);
   delete owner0;
 }
+
+void not_null_borrower(gsl::not_null<mp::borrower<int *>> owner)
+{
+    *owner = 43;
+}
+
+TEST_CASE("not_null", "[borrower]")
+{
+    std::unique_ptr<int> owner = std::make_unique<int>(42);
+    not_null_borrower(mp::make_borrower<int*>(owner.get()));
+    REQUIRE(*owner == 43);
+}
+
+// NOLINTEND (cppcoreguidelines-avoid-magic-numbers)
