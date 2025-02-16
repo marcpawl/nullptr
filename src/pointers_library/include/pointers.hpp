@@ -19,6 +19,9 @@ namespace pointers {
   template<class T, std::enable_if_t<std::is_pointer<T>::value, bool> = true>
   using nonowner = T;
 
+  template<class T, std::enable_if_t<std::is_pointer<T>::value, bool> = true>
+  using maybe_null = T;
+
   //
   // borrower
   //
