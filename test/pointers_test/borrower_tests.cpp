@@ -384,4 +384,21 @@ TEST_CASE("bool", "[borrower]")
   }
 }
 
+static int legacy(int const*const ptr)
+{
+  if (nullptr == ptr) { return -1; }
+  return *ptr;
+}
+
+TEST_CASE("gsl::not_null", "[borrower]")
+{
+  std::unique_ptr<int> owner = std::make_unique<int>(42);
+  mp::borrower<int *> borrower = mp::make_borrower<int *>(owner.get());
+  gsl::not_null<mp::borrower<int *>> var_not_null_borrower = gsl::make_not_null(borrower);
+  REQUIRE(var_not_null_borrower.get() == borrower);
+  REQUIRE(var_not_null_borrower.get().get() == owner.get());
+
+  REQUIRE(42 == legacy(var_not_null_borrower.get().get()));
+}
+
 // NOLINTEND (cppcoreguidelines-avoid-magic-numbers)
