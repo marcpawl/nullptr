@@ -27,9 +27,9 @@ endfunction()
 
 #compile_and_check(borrower_must_be_pointer.cpp "T Must be pointer")
 
-add_executable(borrower_tests borrower_tests.cpp)
+add_executable(pointers_tests borrower_tests.cpp) 
 target_link_libraries(
-  borrower_tests
+  pointers_tests
   PRIVATE nullptr::nullptr_warnings
           nullptr::nullptr_options
           pointers_library
@@ -37,7 +37,7 @@ target_link_libraries(
 
 if(WIN32 AND BUILD_SHARED_LIBS)
   add_custom_command(
-    TARGET borrower_tests
+    TARGET pointers_tests
     PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:tests> $<TARGET_FILE_DIR:tests>
     COMMAND_EXPAND_LISTS)
@@ -46,7 +46,7 @@ endif()
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
 catch_discover_tests(
-  borrower_tests
+  pointers_tests
   TEST_PREFIX
   "unittests."
   OUTPUT_DIR
