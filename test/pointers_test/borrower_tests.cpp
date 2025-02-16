@@ -308,3 +308,13 @@ TEST_CASE("comparison operator", "[borrower]")
   delete owner1;
   delete owner0;
 }
+
+TEST_CASE("hashing", "[borrower]")
+{
+  gsl::owner<Child *> owner0{ new Child() };
+  mp::borrower<Parent *> const borrower0 = mp::make_borrower<Parent *>(owner0);
+  auto expected = std::hash<Child *>{}(owner0);
+  auto actual = std::hash<mp::borrower<Parent *>>{}(borrower0);
+  REQUIRE(actual == expected);
+  delete owner0;
+}

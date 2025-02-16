@@ -1,6 +1,13 @@
 
 #pragma once
 
+#include <cstddef>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <string>
+#include <unordered_set>
+
 #include <concepts>
 #include <utility>
 #include <type_traits>
@@ -155,24 +162,15 @@ requires (EqualityComparable<T, U>)
   template<class T>
   borrower<T> operator+(std::ptrdiff_t, const borrower<T> &) = delete;
 
-
-  template<class T,
-    class U = decltype(std::declval<const T &>().get()),
-    bool = std::is_default_constructible<std::hash<U>>::value>
-  struct borrower_hash
-  {
-    std::size_t operator()(const T &value) const
-    {
-      return std::hash<U>{}(value.get());
-    }
-  };
-
-  template<class T, class U> struct borrower_hash<T, U, false>
-  {
-    borrower_hash() = delete;
-    borrower_hash(const borrower_hash &) = delete;
-    borrower_hash &operator=(const borrower_hash &) = delete;
-  };
-
 }// namespace pointers
 }// namespace marcpawl
+
+
+template<typename T>
+struct std::hash<marcpawl::pointers::borrower<T>>
+{
+    std::size_t operator()(const marcpawl::pointers::borrower<T>& b) const noexcept
+    {
+        return std::hash<T>{}(b.get());
+    }
+};
