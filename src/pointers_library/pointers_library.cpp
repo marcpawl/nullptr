@@ -1,4 +1,4 @@
-#include "pointers.hpp"
+#include "marcpawl/pointers/pointers.hpp"
 
 int pointers_library() noexcept
 {

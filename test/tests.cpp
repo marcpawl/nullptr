@@ -71,7 +71,7 @@ struct Vocal
 
 static void legacy(Vocal *ptr) { ptr->hello(); }
 
-#include "pointers.hpp"
+#include "marcpawl/pointers/pointers.hpp"
 namespace mp = marcpawl::pointers;
 
 ///////////////////////////////////////////////////////////////////////
