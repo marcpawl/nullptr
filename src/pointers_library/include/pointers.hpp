@@ -68,7 +68,7 @@ namespace pointers {
     constexpr decltype(auto) operator->() const { return get(); }
     constexpr decltype(auto) operator*() const { return *get(); }
 
-    operator bool() const { return ptr_ != nullptr; }
+    operator void*() const { return ptr_; }
 
     // unwanted operators...pointers only point to single objects!
     borrower &operator++() = delete;

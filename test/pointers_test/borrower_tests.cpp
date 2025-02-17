@@ -318,6 +318,13 @@ TEST_CASE("comparison operator", "[borrower]")
     REQUIRE_FALSE(nullptr != null_borrower);
     REQUIRE(nullptr != borrower0);
   }
+  SECTION("0 as nullptr") {
+    mp::borrower<int *> null_borrower{ nullptr };
+    REQUIRE(null_borrower == 0);
+    REQUIRE_FALSE(borrower0 == 0);
+    REQUIRE(0 == null_borrower);
+    REQUIRE_FALSE(0 == borrower0);
+  }
   delete owner1;
   delete owner0;
 }
@@ -379,8 +386,25 @@ TEST_CASE("bool", "[borrower]")
   SECTION("null")
   {
     mp::borrower<int *> borrower = mp::make_borrower<int *>(nullptr);
-    bool const not_null = borrower;
-    REQUIRE_FALSE(not_null);
+    bool const null = borrower;
+    REQUIRE_FALSE(null);
+  }
+}
+
+TEST_CASE("void*", "[borrower]")
+{
+  SECTION("not_null")
+  {
+    std::unique_ptr<int> owner = std::make_unique<int>(42);
+    mp::borrower<int *> borrower = mp::make_borrower<int *>(owner.get());
+    void* not_null = borrower;
+    REQUIRE(not_null != nullptr);
+  }
+  SECTION("null")
+  {
+    mp::borrower<int *> borrower = mp::make_borrower<int *>(nullptr);
+    void* null = borrower;
+    REQUIRE(null == nullptr);
   }
 }
 
