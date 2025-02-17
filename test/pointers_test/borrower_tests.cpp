@@ -1,6 +1,7 @@
 #include "marcpawl/pointers/pointers.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <sstream>
+#include "hierarchy.hpp"
 
 namespace mp = marcpawl::pointers;
 
@@ -10,69 +11,6 @@ TEST_CASE("default constructor", "[borrower]")
 {
   mp::borrower<int *> const borrower{};
   REQUIRE(borrower.get() == nullptr);
-}
-
-
-struct Parent
-{
-  int *value;
-  Parent()
-  {
-    // NOLINTNEXTLINE (cppcoreguidelines-owning-memory)
-    value = new int(0);
-  }
-  Parent(Parent &other) = delete;
-  Parent(Parent &&other) noexcept
-  {
-    // NOLINTNEXTLINE (cppcoreguidelines-owning-memory)
-    delete value;
-    // NOLINTNEXTLINE (cppcoreguidelines-owning-memory)
-    value = new int(other.get_value());
-    // NOLINTNEXTLINE (cppcoreguidelines-owning-memory)
-    delete other.value;
-    other.value = nullptr;
-  }
-  virtual ~Parent() { delete value; }
-
-  Parent &operator=(Parent &other) = delete;
-  Parent &operator=(Parent &&other) noexcept
-  {
-    if (this == &other) { return *this; }
-    // NOLINTNEXTLINE (cppcoreguidelines-owning-memory)
-    delete value;
-    // NOLINTNEXTLINE (cppcoreguidelines-owning-memory)
-    value = new int(other.get_value());
-    // NOLINTNEXTLINE (cppcoreguidelines-owning-memory)
-    delete other.value;
-    other.value = nullptr;
-    return *this;
-  }
-
-  [[nodiscard]]
-  int get_value() const
-  {
-    if (nullptr == value) { return 0; }
-    return *value;
-  }
-};
-
-struct Child : Parent
-{
-  int another_value = 0;
-
-  Child() = default;
-  Child(Child &other) = delete;
-  Child(Child &&other) = default;
-  ~Child() override = default;
-  Child &operator=(Child &other) = delete;
-  Child &operator=(Child &&other) = default;
-};
-
-TEST_CASE("delete child", "")
-{
-  // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
-  gsl::owner<Child *> owner(new Child());
-  delete owner;
 }
 
 TEST_CASE("explicit constructor", "[borrower]")
@@ -406,12 +344,6 @@ TEST_CASE("void*", "[borrower]")
     void* null = borrower;
     REQUIRE(null == nullptr);
   }
-}
-
-static int legacy(int const*const ptr)
-{
-  if (nullptr == ptr) { return -1; }
-  return *ptr;
 }
 
 TEST_CASE("gsl::not_null", "[borrower]")

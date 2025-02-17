@@ -31,7 +31,7 @@ endfunction()
 # Run the test
 test_compile_failure("TestCompilationFailure" borrower_must_be_pointer.cpp "T Must be pointer")
 
-add_executable(pointers_tests borrower_tests.cpp) 
+add_executable(pointers_tests borrower_tests.cpp owner_tests.cpp) 
 target_link_libraries(
   pointers_tests
   PRIVATE nullptr::nullptr_warnings
