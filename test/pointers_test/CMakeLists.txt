@@ -1,31 +1,35 @@
 
 
-# Define a function to compile and check for a specific error
-function(compile_and_check SOURCE_FILE ERROR_MESSAGE)
-  # Compile the source file and redirect stderr to a file
-  execute_process(
-    COMMAND 
-     ${CMAKE_CXX_COMPILER} 
-     -I${CMAKE_CURRENT_SOURCE_DIR}/../../src/pointers_library/include 
-     -I${CMAKE_BINARY_DIR}/_deps/gsl-src/include/
-     -c 
-     -o failed_program ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE}
-    ERROR_FILE ${CMAKE_CURRENT_BINARY_DIR}/compile_errors.txt
-    RESULT_VARIABLE result
-  )
+cmake_minimum_required(VERSION 3.14)
+project(CompilationFailureTest)
 
-  # Read the compile errors
-  file(READ ${CMAKE_CURRENT_BINARY_DIR}/compile_errors.txt compile_errors)
+# Function to test compilation failure
+function(test_compile_failure test_name source_file expected_error)
+    # Try to compile the source file
+    try_compile(
+        COMPILE_RESULT
+        ${CMAKE_BINARY_DIR}/compile_tests/${test_name}
+	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${source_file}
+        COMPILE_DEFINITIONS "-DERROR_MESSAGE=\"${expected_error}\""
+        CMAKE_FLAGS "-DCMAKE_CXX_FLAGS=-Werror"  # Treat warnings as errors
+        OUTPUT_VARIABLE COMPILE_OUTPUT
+    )
 
-  # Check for the specific error message
-  if("${compile_errors}" MATCHES "${ERROR_MESSAGE}")
-    message(STATUS "Compilation failed with the specific error as expected.")
-  else()
-    message(FATAL_ERROR "Compilation did not fail with the specific error.")
-  endif()
+    # Check if the compilation failed as expected
+    if(COMPILE_RESULT)
+        message(FATAL_ERROR "Test ${test_name} failed: Compilation succeeded unexpectedly.")
+    else()
+        # Optionally, check if the expected error message is in the output
+        if(NOT "${COMPILE_OUTPUT}" MATCHES "${expected_error}")
+            message(FATAL_ERROR "Test ${test_name} failed: Expected error message '${expected_error}' not found in output.")
+        else()
+            message(STATUS "Test ${test_name} passed: Compilation failed as expected with error '${expected_error}'.")
+        endif()
+    endif()
 endfunction()
 
-#compile_and_check(borrower_must_be_pointer.cpp "T Must be pointer")
+# Run the test
+test_compile_failure("TestCompilationFailure" borrower_must_be_pointer.cpp "T Must be pointer")
 
 add_executable(pointers_tests borrower_tests.cpp) 
 target_link_libraries(
