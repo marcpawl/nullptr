@@ -9,13 +9,13 @@
 #include <unordered_set>
 
 #include <concepts>
-#include <utility>
-#include <type_traits>
-#include <iostream>
 #include <gsl/gsl>
+#include <iostream>
+#include <type_traits>
+#include <utility>
 
-#include"marcpawl/pointers/details.hpp"
-#include"marcpawl/pointers/ptr.hpp"
+#include "marcpawl/pointers/details.hpp"
+#include "marcpawl/pointers/ptr.hpp"
 
 namespace marcpawl {
 namespace pointers {
@@ -32,18 +32,20 @@ namespace pointers {
   // - allow implicit conversion to U*
   //
   // based on gsl::not_null
-  template<class T> using borrower =  marcpawl::pointers::details::pointer<T, true>;
-
   template<class T>
-  borrower<T> make_borrower(T ptr) noexcept
+  using borrower = marcpawl::pointers::details::pointer<T,
+    marcpawl::pointers::details::null_policy::nullable>;
+
+  template<class T> borrower<T> make_borrower(T ptr) noexcept
   {
     return borrower<T>(ptr);
   }
 
-  template<class T> using borrower_not_null =  marcpawl::pointers::details::pointer<T, false>;
-
   template<class T>
-  borrower_not_null<T> make_borrower_not_null(T ptr) noexcept
+  using borrower_not_null = marcpawl::pointers::details::pointer<T,
+    marcpawl::pointers::details::null_policy::not_null>;
+
+  template<class T> borrower_not_null<T> make_borrower_not_null(T ptr) noexcept
   {
     return borrower<T>(ptr);
   }

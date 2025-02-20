@@ -20,23 +20,25 @@ namespace marcpawl {
 namespace pointers {
   namespace details {
 
-    template<class T, bool nullable> class pointer
+    enum struct null_policy { nullable, not_null };
+
+    template<class T, null_policy nullable> class pointer
     {
     public:
       static_assert(std::is_pointer<T>::value, "T Must be pointer.");
 
-      explicit pointer() requires (nullable)= default;
+      explicit pointer() requires (null_policy::nullable == nullable)= default;
 
       explicit pointer(std::nullptr_t) noexcept 
 	      : ptr_(nullptr)
       {
-	      static_assert(nullable, "parameter cannot be nullptr");
+	      static_assert(nullable == null_policy::nullable, "parameter cannot be nullptr");
       }
 
-      explicit pointer(T ptr) noexcept requires (nullable): ptr_(ptr) {
+      explicit pointer(T ptr) noexcept requires (nullable == null_policy::nullable): ptr_(ptr) {
       }
 
-      explicit pointer(T ptr) requires (!nullable): ptr_(ptr) {
+      explicit pointer(T ptr) requires (nullable == null_policy::not_null): ptr_(ptr) {
         if ( ptr == nullptr) {
           throw nullptr_exception();
         }
@@ -86,7 +88,7 @@ namespace pointers {
 
 
 #if !defined(GSL_NO_IOSTREAMS)
-    template<class T, bool nullable>
+    template<class T, null_policy nullable>
     std::ostream &operator<<(std::ostream &os, pointer<T, nullable> const &val)
     {
       os << val.get();
@@ -95,7 +97,7 @@ namespace pointers {
 #endif// !defined(GSL_NO_IOSTREAMS)
 
 
-    template<typename T, typename U, bool nullable>
+    template<typename T, typename U, null_policy nullable>
       requires(::marcpawl::pointers::details::EqualityComparable<T, U>)
     auto operator==(pointer<T, nullable> const &lhs,
       pointer<U, nullable> const &rhs) noexcept
@@ -103,21 +105,21 @@ namespace pointers {
       return lhs.get() == rhs.get();
     }
 
-    // template <typename T, bool nullable>
+    // template <typename T, null_policy nullable>
     // auto operator==( pointer<T, nullable> const &lhs,  std::nullptr_t)
     // noexcept
     // {
     //   return lhs.get() == nullptr;
     // }
 
-    template<typename T, bool nullable>
+    template<typename T, null_policy nullable>
     auto operator==(pointer<T, nullable> const &lhs,
       void const *const rhs) noexcept
     {
       return lhs.get() == rhs;
     }
 
-    template<typename T, typename U, bool nullable>
+    template<typename T, typename U, null_policy nullable>
       requires(::marcpawl::pointers::details::EqualityComparable<T, U>)
     auto operator!=(pointer<T, nullable> const &lhs,
       pointer<U, nullable> const &rhs) noexcept
@@ -125,7 +127,7 @@ namespace pointers {
       return lhs.get() != rhs.get();
     }
 
-    template<typename T, typename U, bool nullable>
+    template<typename T, typename U, null_policy nullable>
       requires(::marcpawl::pointers::details::Comparable<T, U>)
     auto operator<(pointer<T, nullable> const &lhs,
       pointer<U, nullable> const &rhs) noexcept
@@ -133,7 +135,7 @@ namespace pointers {
       return lhs.get() < rhs.get();
     }
 
-    template<typename T, typename U, bool nullable>
+    template<typename T, typename U, null_policy nullable>
       requires(::marcpawl::pointers::details::Comparable<T, U>
                && ::marcpawl::pointers::details::EqualityComparable<T, U>)
     auto operator<=(pointer<T, nullable> const &lhs,
@@ -142,7 +144,7 @@ namespace pointers {
       return lhs.get() <= rhs.get();
     }
 
-    template<typename T, typename U, bool nullable>
+    template<typename T, typename U, null_policy nullable>
       requires(::marcpawl::pointers::details::Comparable<T, U>)
     auto operator>(pointer<T, nullable> const &lhs,
       pointer<U, nullable> const &rhs) noexcept
@@ -150,7 +152,7 @@ namespace pointers {
       return lhs.get() > rhs.get();
     }
 
-    template<typename T, typename U, bool nullable>
+    template<typename T, typename U, null_policy nullable>
       requires(::marcpawl::pointers::details::Comparable<T, U>
                && ::marcpawl::pointers::details::EqualityComparable<T, U>)
     auto operator>=(pointer<T, nullable> const &lhs,
@@ -160,16 +162,19 @@ namespace pointers {
     }
 
     // more unwanted operators
-    template<class T, class U, bool nullable>
+    template<class T, class U, null_policy nullable>
     std::ptrdiff_t operator-(const pointer<T, nullable> &,
       const pointer<U, nullable> &) = delete;
-    template<class T, bool nullable>
+
+    template<class T, null_policy nullable>
     pointer<T, nullable> operator-(const pointer<T, nullable> &,
       std::ptrdiff_t) = delete;
-    template<class T, bool nullable>
+
+    template<class T, null_policy nullable>
     pointer<T, nullable> operator+(const pointer<T, nullable> &,
       std::ptrdiff_t) = delete;
-    template<class T, bool nullable>
+
+    template<class T, null_policy nullable>
     pointer<T, nullable> operator+(std::ptrdiff_t,
       const pointer<T, nullable> &) = delete;
 
@@ -178,7 +183,7 @@ namespace pointers {
 }// namespace marcpawl
 
 
-template<typename T, bool nullable>
+template<typename T, marcpawl::pointers::details::null_policy nullable>
 struct std::hash<marcpawl::pointers::details::pointer<T, nullable>>
 {
   std::size_t operator()(
