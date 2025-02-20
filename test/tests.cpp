@@ -69,7 +69,9 @@ struct Vocal
   void hello() const { std::clog << data << " hello " << this << '\n'; }
 };
 
-static void legacy(Vocal *ptr) { ptr->hello(); }
+namespace {
+void legacy(Vocal *ptr) { ptr->hello(); }
+}
 
 #include "marcpawl/pointers/pointers.hpp"
 namespace mp = marcpawl::pointers;
@@ -90,10 +92,12 @@ TEST_CASE("owner", "[owner]")
   delete owner;
 }
 
-static void delete_me(gsl::owner<Vocal *> &owner)
+namespace {
+ void delete_me(gsl::owner<Vocal *> &owner)
 {
   delete owner;
   owner = nullptr;
+}
 }
 
 TEST_CASE("delete_me", "[owner]")
@@ -104,10 +108,12 @@ TEST_CASE("delete_me", "[owner]")
   delete_me(owner);
 }
 
-static void owner_copy(gsl::owner<Vocal *> thief)
+namespace {
+void owner_copy(gsl::owner<Vocal *> thief)
 {
   std::clog << "thief=" << thief << '\n';
   // we are allowed to delete thief since we own the pointer
+}
 }
 
 TEST_CASE("copy", "[owner]")
@@ -124,13 +130,15 @@ TEST_CASE("copy", "[owner]")
 // mp::nonowner
 ///////////////////////////////////////////////////////////////////////
 
-static void talk(mp::nonowner<Vocal *> nonowner) { nonowner->hello(); }
+namespace {
+void talk(mp::nonowner<Vocal *> nonowner) { nonowner->hello(); }
 
 
-static void owner_talk(gsl::owner<Vocal *const> const owner)
+void owner_talk(gsl::owner<Vocal *const> const owner)
 {
   std::clog << "owner ";
   owner->hello();
+}
 }
 
 TEST_CASE("nonowner", "[nonowner]")
