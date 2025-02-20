@@ -40,5 +40,13 @@ namespace pointers {
     return borrower<T>(ptr);
   }
 
+  template<class T> using borrower_not_null =  marcpawl::pointers::details::pointer<T, false>;
+
+  template<class T>
+  borrower_not_null<T> make_borrower_not_null(T ptr) noexcept
+  {
+    return borrower<T>(ptr);
+  }
+
 }// namespace pointers
 }// namespace marcpawl

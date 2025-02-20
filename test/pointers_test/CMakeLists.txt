@@ -34,6 +34,10 @@ endfunction()
 # Run the test
 test_compile_failure("TestCompilationFailure" fail/borrower_must_be_pointer.cpp "T Must be pointer")
 #test_compile_failure("TestCompilationFailure" fail/borrower_not_deletable.cpp "'__is_invocable<marcpawl::pointers::NonDeletable")
+test_compile_failure(
+	"TestCompilationFailure" 
+	fail/borrower_not_null_default_contstructor.cpp
+	"no matching constructor")
 
 add_executable(pointers_tests 
     borrower_tests.cpp 
