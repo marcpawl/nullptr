@@ -32,7 +32,7 @@ namespace pointers {
   // - allow implicit conversion to U*
   //
   // based on gsl::not_null
-  template<class T> using borrower =  marcpawl::pointers::details::pointer<T, false>;
+  template<class T> using borrower =  marcpawl::pointers::details::pointer<T, true>;
 
   template<class T>
   borrower<T> make_borrower(T ptr) noexcept
