@@ -15,6 +15,7 @@
 #include <gsl/gsl>
 
 #include"marcpawl/pointers/details.hpp"
+#include"marcpawl/pointers/ptr.hpp"
 
 namespace marcpawl {
 namespace pointers {
@@ -31,145 +32,13 @@ namespace pointers {
   // - allow implicit conversion to U*
   //
   // based on gsl::not_null
-  template<class T> class borrower
-  {
-  public:
-    static_assert(std::is_pointer<T>::value, "T Must be pointer.");
+  template<class T> using borrower =  marcpawl::pointers::details::pointer<T, false>;
 
-    explicit borrower() = default;
-
-    explicit borrower(T ptr) noexcept : ptr_(ptr) {}
-
-    template<typename U,
-      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    explicit borrower(borrower<U> const &ptr) noexcept : ptr_(ptr.get())
-    {}
-
-    template<typename U,
-      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    explicit borrower(borrower<U> &&other) noexcept : ptr_(other.get())
-    {}
-
-    ~borrower() = default;
-
-    template<typename U,
-      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    borrower<T> &operator=(borrower<U> const &other) noexcept
-    {
-      if (this == other) { return *this; }
-      ptr_ = other.get();
-      return *this;
-    }
-
-    constexpr T get() const noexcept { return ptr_; }
-    constexpr decltype(auto) operator->() const { return get(); }
-    constexpr decltype(auto) operator*() const { return *get(); }
-    constexpr operator bool() const { return get() != nullptr; }
-
-    // unwanted operators...pointers only point to single objects!
-    borrower &operator++() = delete;
-    borrower &operator--() = delete;
-    borrower operator++(int) = delete;
-    borrower operator--(int) = delete;
-    borrower &operator+=(std::ptrdiff_t) = delete;
-    borrower &operator-=(std::ptrdiff_t) = delete;
-    void operator[](std::ptrdiff_t) const = delete;
-
-  private:
-    T ptr_ = nullptr;
-  };
-
-  template<typename T, typename U,
-  typename = std::enable_if_t<std::is_convertible<U, T>::value>> auto make_borrower(U &&u) noexcept
-  {
-    return borrower<std::remove_cv_t<std::remove_reference_t<T>>>{
-      std::forward<T>(u)
-    };
-  }
-
-#if !defined(GSL_NO_IOSTREAMS)
   template<class T>
-  std::ostream &operator<<(std::ostream &os,  borrower<T> const &val)
+  borrower<T> make_borrower(T ptr) noexcept
   {
-    os << val.get();
-    return os;
+    return borrower<T>(ptr);
   }
-#endif// !defined(GSL_NO_IOSTREAMS)
-
-
-template <typename T, typename U>
-requires (::marcpawl::pointers::details::EqualityComparable<T, U>)
-  auto operator==( borrower<T> const &lhs,  borrower<U> const &rhs) noexcept
-  {
-    return lhs.get() == rhs.get();
-  }
-
-  // template <typename T>
-  // auto operator==( borrower<T> const &lhs,  std::nullptr_t) noexcept
-  // {
-  //   return lhs.get() == nullptr;
-  // }
-
-  template <typename T>
-  auto operator==( borrower<T> const &lhs,  void const* const rhs) noexcept
-  {
-    return lhs.get() == rhs;
-  }
-
-  template <typename T, typename U>
-requires (::marcpawl::pointers::details::EqualityComparable<T, U>)
-  auto operator!=( borrower<T> const &lhs,  borrower<U> const &rhs) noexcept
-  {
-    return lhs.get() != rhs.get();
-  }
-
-  template <typename T, typename U>
-  requires (::marcpawl::pointers::details::Comparable<T, U>)
-    auto operator<( borrower<T> const &lhs,  borrower<U> const &rhs) noexcept
-    {
-      return lhs.get() < rhs.get();
-    }
-
-    template <typename T, typename U>
-    requires (::marcpawl::pointers::details::Comparable<T, U> && ::marcpawl::pointers::details::EqualityComparable<T, U>)
-      auto operator<=( borrower<T> const &lhs,  borrower<U> const &rhs) noexcept
-      {
-        return lhs.get() <= rhs.get();
-      }
-  
-    template <typename T, typename U>
-    requires (::marcpawl::pointers::details::Comparable<T, U>)
-      auto operator>( borrower<T> const &lhs,  borrower<U> const &rhs) noexcept
-      {
-        return lhs.get() > rhs.get();
-      }
-
-      template <typename T, typename U>
-      requires (::marcpawl::pointers::details::Comparable<T, U> && ::marcpawl::pointers::details::EqualityComparable<T, U>)
-      auto operator>=( borrower<T> const &lhs,  borrower<U> const &rhs) noexcept
-        {
-          return lhs.get() >= rhs.get();
-        }
-
-  // more unwanted operators
-  template<class T, class U>
-  std::ptrdiff_t operator-(const borrower<T> &, const borrower<U> &) = delete;
-  template<class T>
-  borrower<T> operator-(const borrower<T> &, std::ptrdiff_t) = delete;
-  template<class T>
-  borrower<T> operator+(const borrower<T> &, std::ptrdiff_t) = delete;
-  template<class T>
-  borrower<T> operator+(std::ptrdiff_t, const borrower<T> &) = delete;
 
 }// namespace pointers
 }// namespace marcpawl
-
-
-template<typename T>
-struct std::hash<marcpawl::pointers::borrower<T>>
-{
-    std::size_t operator()(const marcpawl::pointers::borrower<T>& b) const noexcept
-    {
-        return std::hash<T>{}(b.get());
-    }
-};
