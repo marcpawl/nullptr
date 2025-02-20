@@ -1,4 +1,8 @@
 # Define the library
+
+# Setup include directory
+add_subdirectory(include)
+
 add_library(pointers_library STATIC pointers_library.cpp include)
 set_target_properties(pointers_library PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(pointers_library PUBLIC GSL)

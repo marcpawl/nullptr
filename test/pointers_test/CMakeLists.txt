@@ -3,6 +3,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(CompilationFailureTest)
 
+get_target_property(GSL_INCLUDE_DIRS GSL INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(POINTERS_INCLUDE_DIRS pointers_library INTERFACE_INCLUDE_DIRECTORIES)
 # Function to test compilation failure
 function(test_compile_failure test_name source_file expected_error)
     # Try to compile the source file
@@ -10,26 +12,28 @@ function(test_compile_failure test_name source_file expected_error)
         COMPILE_RESULT
         ${CMAKE_BINARY_DIR}/compile_tests/${test_name}
 	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${source_file}
-        COMPILE_DEFINITIONS "-DERROR_MESSAGE=\"${expected_error}\""
-        CMAKE_FLAGS "-DCMAKE_CXX_FLAGS=-Werror"  # Treat warnings as errors
+        CMAKE_FLAGS 
+	  "-DCMAKE_CXX_FLAGS=-Werror"
+	  "-DINCLUDE_DIRECTORIES=${POINTERS_INCLUDE_DIRS};${GSL_INCLUDE_DIRS}"
         OUTPUT_VARIABLE COMPILE_OUTPUT
     )
 
     # Check if the compilation failed as expected
     if(COMPILE_RESULT)
-        message(FATAL_ERROR "Test ${test_name} failed: Compilation succeeded unexpectedly.")
+	    message(FATAL_ERROR "Test ${test_name} failed: Compilation succeeded unexpectedly.  Expecting: '${expected_error}'")
     else()
         # Optionally, check if the expected error message is in the output
         if(NOT "${COMPILE_OUTPUT}" MATCHES "${expected_error}")
-            message(FATAL_ERROR "Test ${test_name} failed: Expected error message '${expected_error}' not found in output.")
+		message(FATAL_ERROR "Test ${test_name} failed: Expected error message ${source_file} '${expected_error}' not found in output.\n${COMPILE_OUTPUT}")
         else()
-            message(STATUS "Test ${test_name} passed: Compilation failed as expected with error '${expected_error}'.")
+		message(STATUS "Test ${test_name} passed: Compilation failed as expected with error ${source_file}")
         endif()
     endif()
 endfunction()
 
 # Run the test
-test_compile_failure("TestCompilationFailure" borrower_must_be_pointer.cpp "T Must be pointer")
+test_compile_failure("TestCompilationFailure" fail/borrower_must_be_pointer.cpp "T Must be pointer")
+#test_compile_failure("TestCompilationFailure" fail/borrower_not_deletable.cpp "'__is_invocable<marcpawl::pointers::NonDeletable")
 
 add_executable(pointers_tests borrower_tests.cpp owner_tests.cpp) 
 target_link_libraries(

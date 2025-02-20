@@ -64,8 +64,7 @@ namespace pointers {
     constexpr T get() const noexcept { return ptr_; }
     constexpr decltype(auto) operator->() const { return get(); }
     constexpr decltype(auto) operator*() const { return *get(); }
-
-    operator void*() const { return ptr_; }
+    constexpr operator bool() const { return get() != nullptr; }
 
     // unwanted operators...pointers only point to single objects!
     borrower &operator++() = delete;
@@ -75,8 +74,6 @@ namespace pointers {
     borrower &operator+=(std::ptrdiff_t) = delete;
     borrower &operator-=(std::ptrdiff_t) = delete;
     void operator[](std::ptrdiff_t) const = delete;
-
-    void operator delete(void *, size_t) = delete;
 
   private:
     T ptr_ = nullptr;
@@ -107,10 +104,16 @@ requires (::marcpawl::pointers::details::EqualityComparable<T, U>)
     return lhs.get() == rhs.get();
   }
 
+  // template <typename T>
+  // auto operator==( borrower<T> const &lhs,  std::nullptr_t) noexcept
+  // {
+  //   return lhs.get() == nullptr;
+  // }
+
   template <typename T>
-  auto operator==( borrower<T> const &lhs,  std::nullptr_t) noexcept
+  auto operator==( borrower<T> const &lhs,  void const* const rhs) noexcept
   {
-    return lhs.get() == nullptr;
+    return lhs.get() == rhs;
   }
 
   template <typename T, typename U>
