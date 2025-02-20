@@ -33,7 +33,14 @@ namespace pointers {
 	      static_assert(nullable, "parameter cannot be nullptr");
       }
 
-      explicit pointer(T ptr) noexcept : ptr_(ptr) {}
+      explicit pointer(T ptr) noexcept requires (nullable): ptr_(ptr) {
+      }
+
+      explicit pointer(T ptr) requires (!nullable): ptr_(ptr) {
+        if ( ptr == nullptr) {
+          throw nullptr_exception();
+        }
+      }
 
       template<typename U,
         typename = std::enable_if_t<std::is_convertible<U, T>::value>>

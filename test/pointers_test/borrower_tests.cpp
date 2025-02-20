@@ -7,7 +7,7 @@ namespace mp = marcpawl::pointers;
 
 // NOLINTBEGIN (cppcoreguidelines-avoid-magic-numbers)
 
-TEST_CASE("default constructor", "[borrower]")
+TEST_CASE("borrower default constructor", "[borrower]")
 {
   mp::borrower<int *> const borrower{};
   REQUIRE(borrower.get() == nullptr);

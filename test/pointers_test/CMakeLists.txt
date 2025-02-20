@@ -45,6 +45,7 @@ test_compile_failure(
 
 add_executable(pointers_tests 
     borrower_tests.cpp 
+    borrower_not_null_tests.cpp 
     exception_tests.cpp
     owner_tests.cpp) 
 target_link_libraries(
