@@ -38,6 +38,10 @@ test_compile_failure(
 	"TestCompilationFailure" 
 	fail/borrower_not_null_default_contstructor.cpp
 	"no matching constructor")
+test_compile_failure(
+	"TestCompilationFailure" 
+        fail/borrower_not_null_nullptr_constructor.cpp
+	"parameter cannot be nullptr")
 
 add_executable(pointers_tests 
     borrower_tests.cpp 

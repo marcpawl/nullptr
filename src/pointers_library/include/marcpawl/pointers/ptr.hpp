@@ -27,9 +27,11 @@ namespace pointers {
 
       explicit pointer() requires (nullable)= default;
 
-      explicit pointer(std::nullptr_t) noexcept requires (nullable)
+      explicit pointer(std::nullptr_t) noexcept 
 	      : ptr_(nullptr)
-      {}
+      {
+	      static_assert(nullable, "parameter cannot be nullptr");
+      }
 
       explicit pointer(T ptr) noexcept : ptr_(ptr) {}
 

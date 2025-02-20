@@ -15,6 +15,11 @@ TEST_CASE("default constructor", "[borrower]")
 
 TEST_CASE("explicit constructor", "[borrower]")
 {
+  SECTION("from nullptr")
+  {
+    mp::borrower<int *> const borrower{ nullptr };
+    REQUIRE(borrower.get() == nullptr);
+  }
   SECTION("from owner")
   {
     gsl::owner<int *> owner{ new int(5) };
