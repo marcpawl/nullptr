@@ -35,7 +35,10 @@ endfunction()
 test_compile_failure("TestCompilationFailure" fail/borrower_must_be_pointer.cpp "T Must be pointer")
 #test_compile_failure("TestCompilationFailure" fail/borrower_not_deletable.cpp "'__is_invocable<marcpawl::pointers::NonDeletable")
 
-add_executable(pointers_tests borrower_tests.cpp owner_tests.cpp) 
+add_executable(pointers_tests 
+    borrower_tests.cpp 
+    exception_tests.cpp
+    owner_tests.cpp) 
 target_link_libraries(
   pointers_tests
   PRIVATE nullptr::nullptr_warnings
