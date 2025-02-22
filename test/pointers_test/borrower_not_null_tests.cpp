@@ -1,4 +1,4 @@
-#include "marcpawl/pointers/pointers.hpp"
+#include "marcpawl/pointers/borrower.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 namespace mp = marcpawl::pointers;
