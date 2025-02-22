@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "marcpawl/pointers/details.hpp"
+#include "marcpawl/pointers/exception.hpp"
 
 namespace marcpawl {
 namespace pointers {
