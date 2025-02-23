@@ -9,3 +9,6 @@ target_link_libraries(pointers_library PUBLIC GSL)
 
 # Specify the include directories for the library
 target_include_directories(pointers_library PUBLIC include)
+
+#target_clangformat_setup(pointers_library)
+clangformat_setup( include/marcpawl/pointers/* )

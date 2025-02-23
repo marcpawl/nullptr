@@ -9,10 +9,10 @@
 #include <unordered_set>
 
 #include <concepts>
-#include <utility>
-#include <type_traits>
-#include <iostream>
 #include <gsl/gsl>
+#include <iostream>
+#include <type_traits>
+#include <utility>
 
 namespace marcpawl {
 namespace pointers {

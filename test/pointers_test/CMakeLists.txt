@@ -75,3 +75,5 @@ catch_discover_tests(
   "unittests."
   OUTPUT_SUFFIX
   .xml)
+
+target_clangformat_setup(pointers_tests)

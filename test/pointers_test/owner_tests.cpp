@@ -1,20 +1,20 @@
-//#include "marcpawl/pointers/pointers.hpp"
-//#include <catch2/catch_test_macros.hpp>
+// #include "marcpawl/pointers/pointers.hpp"
+// #include <catch2/catch_test_macros.hpp>
 //
-//#if 0
-//namespace mp = marcpawl::pointers;
-//#endif
+// #if 0
+// namespace mp = marcpawl::pointers;
+// #endif
 //
 //// NOLINTBEGIN (cppcoreguidelines-avoid-magic-numbers)
 //
-//#if 0
-//TEST_CASE("default constructor", "[owner]")
+// #if 0
+// TEST_CASE("default constructor", "[owner]")
 //{
 //  mp::owner<int *> const owner{};
 //  REQUIRE(borrower.get() == nullptr);
 //}
 //
-//TEST_CASE("explicit constructor", "[owner]")
+// TEST_CASE("explicit constructor", "[owner]")
 //{
 //  SECTION("from owner")
 //  {
@@ -32,7 +32,7 @@
 //}
 //
 //
-//TEST_CASE("move constructor", "[owner]")
+// TEST_CASE("move constructor", "[owner]")
 //{
 //  SECTION("from parent")
 //  {
@@ -60,7 +60,7 @@
 //  }
 //}
 //
-//TEST_CASE("move assignment", "[owner]")
+// TEST_CASE("move assignment", "[owner]")
 //{
 //  SECTION("from parent")
 //  {
@@ -75,7 +75,7 @@
 //  {
 //    mp::owner<Child *> owner{ new Child() };
 //    mp::owner<Parent *> new_owner;
-//    new_owner = std::move(owner); 
+//    new_owner = std::move(owner);
 //    REQUIRE(owner == nullptr);
 //    REQUIRE(new_owner != nullptr);
 //    delete new_owner;
@@ -91,19 +91,19 @@
 //  }
 //}
 //
-//TEST_CASE("arrow operator", "[owner]")
+// TEST_CASE("arrow operator", "[owner]")
 //{
 //	mp::owner<Child*> owner { new Child };
 //	REQUIRE(owner->value == 0);
 //}
 //
-//TEST_CASE("dereference operator", "[owner]")
+// TEST_CASE("dereference operator", "[owner]")
 //{
 //	mp::owner<Child*> owner { new Child };
 //	REQUIRE( (*owner).value == 0);
 //}
 //
-//TEST_CASE("make_owner", "[owner]")
+// TEST_CASE("make_owner", "[owner]")
 //{
 //  mp::owner<Parent *> const owner1 = mp::make_owner<Parent *>(new Child);
 //  REQUIRE(owner1.get() != nullptr);
@@ -114,8 +114,8 @@
 //  delete owner2;
 //}
 //
-//#if !defined(GSL_NO_IOSTREAMS)
-//TEST_CASE("stream operator", "[owner]")
+// #if !defined(GSL_NO_IOSTREAMS)
+// TEST_CASE("stream operator", "[owner]")
 //{
 //  gsl::owner<Child *> owner0{ new Child() };
 //  mp::owner<Parent *> const owner = mp::make_owner<Parent *>(owner0);
@@ -128,9 +128,9 @@
 //  REQUIRE(actual == expected);
 //  delete owner0;
 //}
-//#endif
+// #endif
 //
-//TEST_CASE("comparison operator", "[owner]")
+// TEST_CASE("comparison operator", "[owner]")
 //{
 //  gsl::owner<Child *> owner0{ new Child() };
 //  mp::owner<Parent *> const owner0 = mp::make_owner<Parent *>(owner0);
@@ -211,7 +211,7 @@
 //  delete owner0;
 //}
 //
-//TEST_CASE("hashing", "[owner]")
+// TEST_CASE("hashing", "[owner]")
 //{
 //  gsl::owner<Child *> owner0{ new Child() };
 //  mp::owner<Parent *> const owner0 = mp::make_owner<Parent *>(owner0);
@@ -221,21 +221,21 @@
 //  delete owner0;
 //}
 //
-//void not_null_owner(gsl::not_null<mp::owner<int *>> owner)
+// void not_null_owner(gsl::not_null<mp::owner<int *>> owner)
 //{
 //  *owner = 43;
 //}
 //
-//TEST_CASE("not_null", "[owner]")
+// TEST_CASE("not_null", "[owner]")
 //{
 //  std::unique_ptr<int> owner = std::make_unique<int>(42);
 //  not_null_owner(mp::make_owner<int *>(owner.get()));
 //  REQUIRE(*owner == 43);
 //}
 //
-//void reference(int &owner) { owner = 43; }
+// void reference(int &owner) { owner = 43; }
 //
-//TEST_CASE("reference", "[owner]")
+// TEST_CASE("reference", "[owner]")
 //{
 //  SECTION("not_null")
 //  {
@@ -256,7 +256,7 @@
 //}
 //
 //
-//TEST_CASE("bool", "[owner]")
+// TEST_CASE("bool", "[owner]")
 //{
 //  SECTION("not_null")
 //  {
@@ -273,7 +273,7 @@
 //  }
 //}
 //
-//TEST_CASE("void*", "[owner]")
+// TEST_CASE("void*", "[owner]")
 //{
 //  SECTION("not_null")
 //  {
@@ -290,16 +290,16 @@
 //  }
 //}
 //
-//TEST_CASE("gsl::not_null", "[owner]")
+// TEST_CASE("gsl::not_null", "[owner]")
 //{
 //  std::unique_ptr<int> owner = std::make_unique<int>(42);
 //  mp::owner<int *> owner = mp::make_owner<int *>(owner.get());
-//  gsl::not_null<mp::owner<int *>> var_not_null_owner = gsl::make_not_null(owner);
-//  REQUIRE(var_not_null_owner.get() == owner);
+//  gsl::not_null<mp::owner<int *>> var_not_null_owner =
+//  gsl::make_not_null(owner); REQUIRE(var_not_null_owner.get() == owner);
 //  REQUIRE(var_not_null_owner.get().get() == owner.get());
 //
 //  REQUIRE(42 == legacy(var_not_null_owner.get().get()));
 //}
-//#endif
+// #endif
 //
 //// NOLINTEND (cppcoreguidelines-avoid-magic-numbers)

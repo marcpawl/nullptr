@@ -1,7 +1,7 @@
+#include "hierarchy.hpp"
 #include "marcpawl/pointers/borrower.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <sstream>
-#include "hierarchy.hpp"
 
 namespace mp = marcpawl::pointers;
 
@@ -261,7 +261,8 @@ TEST_CASE("comparison operator", "[borrower]")
     REQUIRE_FALSE(nullptr != null_borrower);
     REQUIRE(nullptr != borrower0);
   }
-  SECTION("0 as nullptr") {
+  SECTION("0 as nullptr")
+  {
     mp::borrower<int *> null_borrower{ nullptr };
     // TODO REQUIRE(null_borrower == 0);
     // TODO REQUIRE_FALSE(borrower0 == 0);
@@ -301,15 +302,14 @@ TEST_CASE("reference", "[borrower]")
   SECTION("not_null")
   {
     std::unique_ptr<int> owner = std::make_unique<int>(42);
-    auto borrower =
-     gsl::make_not_null( mp::make_borrower<int *>(owner.get()));
+    auto borrower = gsl::make_not_null(mp::make_borrower<int *>(owner.get()));
     reference(*borrower);
     REQUIRE(*owner == 43);
   }
   SECTION("strict_not_null")
   {
     std::unique_ptr<int> owner = std::make_unique<int>(44);
-   auto borrower =
+    auto borrower =
       gsl::make_strict_not_null(mp::make_borrower<int *>(owner.get()));
     reference(*borrower);
     REQUIRE(*owner == 43);
@@ -340,13 +340,13 @@ TEST_CASE("void*", "[borrower]")
   {
     std::unique_ptr<int> owner = std::make_unique<int>(42);
     mp::borrower<int *> borrower = mp::make_borrower<int *>(owner.get());
-    void* not_null = borrower.get();
+    void *not_null = borrower.get();
     REQUIRE(not_null != nullptr);
   }
   SECTION("null")
   {
     mp::borrower<int *> borrower = mp::make_borrower<int *>(nullptr);
-    void* null = borrower.get();
+    void *null = borrower.get();
     REQUIRE(null == nullptr);
   }
 }

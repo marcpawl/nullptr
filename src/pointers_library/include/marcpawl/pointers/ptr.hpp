@@ -28,21 +28,26 @@ namespace pointers {
     public:
       static_assert(std::is_pointer<T>::value, "T Must be pointer.");
 
-      explicit pointer() requires (null_policy::nullable == nullable)= default;
+      explicit pointer()
+        requires(null_policy::nullable == nullable)
+      = default;
 
-      explicit pointer(std::nullptr_t) noexcept 
-	      : ptr_(nullptr)
+      explicit pointer(std::nullptr_t) noexcept : ptr_(nullptr)
       {
-	      static_assert(nullable == null_policy::nullable, "parameter cannot be nullptr");
+        static_assert(
+          nullable == null_policy::nullable, "parameter cannot be nullptr");
       }
 
-      explicit pointer(T ptr) noexcept requires (nullable == null_policy::nullable): ptr_(ptr) {
-      }
+      explicit pointer(T ptr) noexcept
+        requires(nullable == null_policy::nullable)
+        : ptr_(ptr)
+      {}
 
-      explicit pointer(T ptr) requires (nullable == null_policy::not_null): ptr_(ptr) {
-        if ( ptr == nullptr) {
-          throw nullptr_exception();
-        }
+      explicit pointer(T ptr)
+        requires(nullable == null_policy::not_null)
+        : ptr_(ptr)
+      {
+        if (ptr == nullptr) { throw nullptr_exception(); }
       }
 
       template<typename U,
@@ -193,4 +198,3 @@ struct std::hash<marcpawl::pointers::details::pointer<T, nullable>>
     return std::hash<T>{}(b.get());
   }
 };
-

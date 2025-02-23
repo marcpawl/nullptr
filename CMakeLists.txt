@@ -22,6 +22,10 @@ project(
   HOMEPAGE_URL "https://github.com/marcpawl/nullptr"
   LANGUAGES CXX C)
 
+
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/clangformat-cmake/cmake)
+include(ClangFormat)
+
 include(cmake/PreventInSourceBuilds.cmake)
 include(ProjectOptions.cmake)
 
@@ -122,3 +126,4 @@ include(CPack)
 
 find_package(benchmark REQUIRED)
 add_subdirectory(benchmarks)
+
