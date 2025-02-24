@@ -103,10 +103,13 @@ namespace pointers {
 #endif// !defined(GSL_NO_IOSTREAMS)
 
 
-    template<typename T, typename U, null_policy nullable>
+    template<typename T,
+      typename U,
+      null_policy lhs_nullable,
+      null_policy rhs_nullable>
       requires(::marcpawl::pointers::details::EqualityComparable<T, U>)
-    auto operator==(pointer<T, nullable> const &lhs,
-      pointer<U, nullable> const &rhs) noexcept
+    auto operator==(pointer<T, lhs_nullable> const &lhs,
+      pointer<U, rhs_nullable> const &rhs) noexcept
     {
       return lhs.get() == rhs.get();
     }
@@ -125,64 +128,84 @@ namespace pointers {
       return lhs.get() == rhs;
     }
 
-    template<typename T, typename U, null_policy nullable>
+    template<typename T,
+      typename U,
+      null_policy lhs_nullable,
+      null_policy rhs_nullable>
       requires(::marcpawl::pointers::details::EqualityComparable<T, U>)
-    auto operator!=(pointer<T, nullable> const &lhs,
-      pointer<U, nullable> const &rhs) noexcept
+    auto operator!=(pointer<T, lhs_nullable> const &lhs,
+      pointer<U, rhs_nullable> const &rhs) noexcept
     {
       return lhs.get() != rhs.get();
     }
 
-    template<typename T, typename U, null_policy nullable>
+    template<typename T,
+      typename U,
+      null_policy lhs_nullable,
+      null_policy rhs_nullable>
       requires(::marcpawl::pointers::details::Comparable<T, U>)
-    auto operator<(pointer<T, nullable> const &lhs,
-      pointer<U, nullable> const &rhs) noexcept
+    auto operator<(pointer<T, lhs_nullable> const &lhs,
+      pointer<U, rhs_nullable> const &rhs) noexcept
     {
       return lhs.get() < rhs.get();
     }
 
-    template<typename T, typename U, null_policy nullable>
+    template<typename T,
+      typename U,
+      null_policy lhs_nullable,
+      null_policy rhs_nullable>
       requires(::marcpawl::pointers::details::Comparable<T, U>
                && ::marcpawl::pointers::details::EqualityComparable<T, U>)
-    auto operator<=(pointer<T, nullable> const &lhs,
-      pointer<U, nullable> const &rhs) noexcept
+    auto operator<=(pointer<T, lhs_nullable> const &lhs,
+      pointer<U, rhs_nullable> const &rhs) noexcept
     {
       return lhs.get() <= rhs.get();
     }
 
-    template<typename T, typename U, null_policy nullable>
+    template<typename T,
+      typename U,
+      null_policy lhs_nullable,
+      null_policy rhs_nullable>
       requires(::marcpawl::pointers::details::Comparable<T, U>)
-    auto operator>(pointer<T, nullable> const &lhs,
-      pointer<U, nullable> const &rhs) noexcept
+    auto operator>(pointer<T, lhs_nullable> const &lhs,
+      pointer<U, rhs_nullable> const &rhs) noexcept
     {
-      return lhs.get() > rhs.get();
+      auto l = lhs.get();
+      auto r = rhs.get();
+      return l > r;
     }
 
-    template<typename T, typename U, null_policy nullable>
+    template<typename T,
+      typename U,
+      null_policy lhs_nullable,
+      null_policy rhs_nullable>
       requires(::marcpawl::pointers::details::Comparable<T, U>
                && ::marcpawl::pointers::details::EqualityComparable<T, U>)
-    auto operator>=(pointer<T, nullable> const &lhs,
-      pointer<U, nullable> const &rhs) noexcept
+    auto operator>=(pointer<T, lhs_nullable> const &lhs,
+      pointer<U, rhs_nullable> const &rhs) noexcept
     {
       return lhs.get() >= rhs.get();
     }
 
     // more unwanted operators
-    template<class T, class U, null_policy nullable>
-    std::ptrdiff_t operator-(const pointer<T, nullable> &,
-      const pointer<U, nullable> &) = delete;
+    template<class T,
+      class U,
+      null_policy lhs_nullable,
+      null_policy rhs_nullable>
+    std::ptrdiff_t operator-(const pointer<T, lhs_nullable> &,
+      const pointer<U, rhs_nullable> &) = delete;
 
-    template<class T, null_policy nullable>
-    pointer<T, nullable> operator-(const pointer<T, nullable> &,
+    template<class T, null_policy lhs_nullable, null_policy rhs_nullable>
+    pointer<T, lhs_nullable> operator-(const pointer<T, rhs_nullable> &,
       std::ptrdiff_t) = delete;
 
-    template<class T, null_policy nullable>
-    pointer<T, nullable> operator+(const pointer<T, nullable> &,
+    template<class T, null_policy lhs_nullable, null_policy rhs_nullable>
+    pointer<T, lhs_nullable> operator+(const pointer<T, rhs_nullable> &,
       std::ptrdiff_t) = delete;
 
-    template<class T, null_policy nullable>
-    pointer<T, nullable> operator+(std::ptrdiff_t,
-      const pointer<T, nullable> &) = delete;
+    template<class T, null_policy lhs_nullable, null_policy rhs_nullable>
+    pointer<T, lhs_nullable> operator+(std::ptrdiff_t,
+      const pointer<T, rhs_nullable> &) = delete;
 
   }// namespace details
 }// namespace pointers

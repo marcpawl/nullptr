@@ -273,6 +273,37 @@ TEST_CASE("comparison operator", "[borrower]")
   delete owner0;
 }
 
+TEST_CASE("nullable not_null comparison operator", "[borrower]")
+{
+  int const a = 21;
+  int const b = 22;
+  auto nullable_a = mp::make_borrower<int const *>(&a);
+  auto not_null_a = mp::make_borrower_not_null<int const *>(&a);
+  auto not_null_b = mp::make_borrower_not_null<int const *>(&b);
+  SECTION("operator==")
+  {
+    REQUIRE(nullable_a == not_null_a);
+    REQUIRE(not_null_a == nullable_a);
+    REQUIRE(nullable_a <= not_null_a);
+    REQUIRE(not_null_a >= nullable_a);
+  }
+  SECTION("operator!=")
+  {
+    REQUIRE(nullable_a != not_null_b);
+    REQUIRE(not_null_b != nullable_a);
+  }
+  SECTION("inequality")
+  {
+    if (nullable_a < not_null_b) {
+      REQUIRE(nullable_a <= not_null_b);
+      REQUIRE(not_null_b > nullable_a);
+      REQUIRE(not_null_b >= nullable_a);
+    } else {
+      REQUIRE(false);// TODO
+    }
+  }
+}
+
 TEST_CASE("hashing", "[borrower]")
 {
   gsl::owner<Child *> owner0{ new Child() };

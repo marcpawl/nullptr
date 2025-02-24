@@ -47,7 +47,7 @@ namespace pointers {
 
   template<class T> borrower_not_null<T> make_borrower_not_null(T ptr) noexcept
   {
-    return borrower<T>(ptr);
+    return borrower_not_null<T>(ptr);
   }
 
 }// namespace pointers
