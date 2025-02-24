@@ -6,6 +6,9 @@ FROM ubuntu:${VARIANT}
 ARG VARIANT
 
 # Install necessary packages available from standard repos
+RUN apt-get update -y && apt-get upgrade -y && \
+    apt-get install -y build-essential && \
+    apt-get install -y aptitude
 RUN apt-get update -qq && export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y --no-install-recommends \
         software-properties-common wget apt-utils file zip \
@@ -55,7 +58,8 @@ ARG LLVM_URL="http://apt.llvm.org/${VARIANT}/"
 ARG LLVM_PKG="llvm-toolchain-${VARIANT}-${LLVM_VER}"
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - 2>/dev/null && \
     add-apt-repository -y "deb ${LLVM_URL} ${LLVM_PKG} main" && \
-    apt-get update -qq && export DEBIAN_FRONTEND=noninteractive && \
+    apt-get update -y -qq && apt-get upgrade -y && \
+    export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y --no-install-recommends \
         clang-${LLVM_VER} lldb-${LLVM_VER} lld-${LLVM_VER} clangd-${LLVM_VER} \
         llvm-${LLVM_VER}-dev libclang-${LLVM_VER}-dev clang-tidy-${LLVM_VER} \
@@ -103,7 +107,8 @@ RUN ln -s $(readlink -f /usr/lib/clang/${LLVM_VER}/include) \
     $(include-what-you-use -print-resource-dir 2>/dev/null)/include
 
 ## Cleanup cached apt data we don't need anymore
-RUN apt-get autoremove -y && apt-get clean && \
+RUN apt-get update -y && \
+    apt-get autoremove -y && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Allow the user to set compiler defaults
