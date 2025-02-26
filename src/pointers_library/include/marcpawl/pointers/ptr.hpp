@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <type_traits>
 #include <unordered_set>
 
 #include <concepts>
@@ -43,7 +44,11 @@ namespace pointers {
     enum struct null_policy { nullable, not_null };
     enum struct ownership_policy { borrower, owner };
 
-    template<class T, null_policy nullable, ownership_policy ownership> class pointer
+    template<typename T>
+    concept Pointer = std::is_pointer_v<T>;
+
+    template<Pointer T, null_policy nullable, ownership_policy ownership>
+    class pointer
     {
     public:
       static_assert(std::is_pointer<T>::value, "T Must be pointer.");

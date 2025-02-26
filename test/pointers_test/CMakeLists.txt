@@ -32,7 +32,10 @@ function(test_compile_failure test_name source_file expected_error)
 endfunction()
 
 # Run the test
-test_compile_failure("TestCompilationFailure" fail/borrower_must_be_pointer.cpp "T Must be pointer")
+test_compile_failure(
+	"TestCompilationFailure" 
+	fail/borrower_must_be_pointer.cpp 
+	"note: because 'int' does not satisfy 'Pointer'")
 #test_compile_failure("TestCompilationFailure" fail/borrower_not_deletable.cpp "'__is_invocable<marcpawl::pointers::NonDeletable")
 test_compile_failure(
 	"TestCompilationFailure" 

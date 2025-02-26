@@ -41,6 +41,13 @@ TEST_CASE("explicit constructor", "[borrower]")
     REQUIRE(borrower2.get() != nullptr);
     REQUIRE(*borrower2.get() == 4);
   }
+  SECTION("from non-null") {
+    int data = 32;
+    mp::borrower_not_null<int*> not_null = mp::make_borrower_not_null(&data);
+    mp::borrower<int*> nullable { not_null };
+    REQUIRE(data == *not_null);  
+    REQUIRE(data == *nullable);  
+  }
 }
 
 TEST_CASE("copy constructor", "[borrower]")
