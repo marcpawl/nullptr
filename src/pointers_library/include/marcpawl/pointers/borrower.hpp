@@ -34,7 +34,8 @@ namespace pointers {
   // based on gsl::not_null
   template<class T>
   using borrower = marcpawl::pointers::details::pointer<T,
-    marcpawl::pointers::details::null_policy::nullable>;
+    marcpawl::pointers::details::null_policy::nullable,
+    marcpawl::pointers::details::ownership_policy::borrower>;
 
   template<class T> borrower<T> make_borrower(T ptr) noexcept
   {
@@ -43,7 +44,8 @@ namespace pointers {
 
   template<class T>
   using borrower_not_null = marcpawl::pointers::details::pointer<T,
-    marcpawl::pointers::details::null_policy::not_null>;
+    marcpawl::pointers::details::null_policy::not_null,
+    marcpawl::pointers::details::ownership_policy::borrower>;
 
   template<class T> borrower_not_null<T> make_borrower_not_null(T ptr) noexcept
   {
