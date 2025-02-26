@@ -1,4 +1,4 @@
-#include "marcpawl/pointers/exception.hpp"
+#include "marcpawl/pointers/ptr.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 namespace mp = marcpawl::pointers;
