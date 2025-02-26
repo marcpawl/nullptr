@@ -64,6 +64,13 @@ TEST_CASE("copy constructor", "[borrower]")
     REQUIRE(parent3.get() == child1.get());
     delete owner2;
   }
+  SECTION("from not null") {
+    int const data = 42;
+    mp::borrower_not_null<int const*> src = mp::make_borrower_not_null(&data);
+    mp::borrower<int const*> dest{ src };
+    bool result = (*dest == data);
+    REQUIRE(result);
+  }
 }
 
 TEST_CASE("move constructor", "[borrower]")

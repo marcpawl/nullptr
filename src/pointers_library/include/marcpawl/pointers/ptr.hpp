@@ -70,18 +70,22 @@ namespace pointers {
         if (ptr == nullptr) { throw nullptr_exception(); }
       }
 
-      template<typename U,
+      template<typename U, null_policy rhs_nullable,
         typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-      explicit pointer(pointer<U, nullable, ownership> const &ptr) noexcept
+      explicit pointer(pointer<U, rhs_nullable, ownership> const &ptr) noexcept
         : ptr_(ptr.get())
-      {}
+      {
+        // TODO not null will not accept nullable
+        // TODO owner will not accept borrower
+        // TODO borrower will accept owner
+      }
 
-      template<typename U,
+      template<typename U, null_policy rhs_nullable,
         typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-      explicit pointer(pointer<U, nullable, ownership> &&other) noexcept
+      explicit pointer(pointer<U, rhs_nullable, ownership> &&other) noexcept
         : ptr_(other.get())
       {
-	      // TODO non-nullable accepts nullable
+	      // TODO nullable accepts non-nullable
 	      // TODO borrower accepts owner
       }
 
