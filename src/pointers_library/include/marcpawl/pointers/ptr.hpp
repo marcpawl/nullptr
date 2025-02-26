@@ -41,7 +41,7 @@ namespace pointers {
   namespace details {
 
     enum struct null_policy { nullable, not_null };
-    enum struct ownership_policy { borrower };
+    enum struct ownership_policy { borrower, owner };
 
     template<class T, null_policy nullable, ownership_policy ownership> class pointer
     {
@@ -295,6 +295,26 @@ namespace pointers {
   template<class T> borrower_not_null<T> make_borrower_not_null(T ptr) noexcept
   {
     return borrower_not_null<T>(ptr);
+  }
+
+  template<class T>
+  using owner = marcpawl::pointers::details::pointer<T,
+    marcpawl::pointers::details::null_policy::nullable,
+    marcpawl::pointers::details::ownership_policy::owner>;
+
+  template<class T> owner<T> make_owner(T ptr) noexcept
+  {
+    return owner<T>(ptr);
+  }
+
+  template<class T>
+  using owner_not_null = marcpawl::pointers::details::pointer<T,
+    marcpawl::pointers::details::null_policy::not_null,
+    marcpawl::pointers::details::ownership_policy::owner>;
+
+  template<class T> owner_not_null<T> make_owner_not_null(T ptr) noexcept
+  {
+    return owner_not_null<T>(ptr);
   }
 
 }// namespace pointers
