@@ -48,6 +48,7 @@ test_compile_failure(
 
 add_executable(pointers_tests 
     maybe_null_tests.cpp
+    not_null_tests.cpp
     borrower_tests.cpp 
     borrower_not_null_tests.cpp 
     owner_tests.cpp 

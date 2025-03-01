@@ -79,9 +79,12 @@ namespace pointers {
     strict_not_null() = delete;
 
   private:
+    struct privileged
+    {
+    };
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    constexpr strict_not_null(U &&u) noexcept(
+    constexpr strict_not_null(privileged const &, U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
       : ptr_(u)
     {}
@@ -133,7 +136,7 @@ namespace pointers {
     }
 
   public:
-    // constexpr operator T() const { return get(); }
+    constexpr operator T() const { return get(); }
     constexpr decltype(auto) operator->() const { return get(); }
     constexpr decltype(auto) operator*() const { return *get(); }
 
@@ -264,7 +267,8 @@ namespace pointers {
       if (ptr_ == nullptr) {
         return std::nullopt;
       } else {
-        strict_not_null<T> ptr{ ptr_ };
+        typename strict_not_null<T>::privileged privileged;
+        strict_not_null<T> ptr{ privileged, ptr_ };
         std::optional<strict_not_null<T>> result{ ptr };
         return result;
       }
