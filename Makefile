@@ -15,14 +15,16 @@ cmake:
 	${MAKE} compile
 
 .PHONY: compile
-compile: /home/dev/.conan2/profiles/default
-	conan install . --build=missing
+compile: /home/dev/build/Release/generators/CMakePresets.json /home/dev/CMakeUserPresets.json
 	ninja -C /home/dev/build
 	ninja -C /home/dev/build test
 	/home/dev/build/benchmarks/benchmarks
 
 /home/dev/.conan2/profiles/default:
 	conan profile detect
+
+/home/dev/build/Release/generators/CMakePresets.json /home/dev/CMakeUserPresets.json &: /home/dev/.conan2/profiles/default
+	conan install . --build=missing
 
 .PHONY: format
 format:
