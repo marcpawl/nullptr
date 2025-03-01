@@ -41,12 +41,13 @@ TEST_CASE("explicit constructor", "[borrower]")
     REQUIRE(borrower2.get() != nullptr);
     REQUIRE(*borrower2.get() == 4);
   }
-  SECTION("from non-null") {
+  SECTION("from non-null")
+  {
     int data = 32;
-    mp::borrower_not_null<int*> not_null = mp::make_borrower_not_null(&data);
-    mp::borrower<int*> nullable { not_null };
-    REQUIRE(data == *not_null);  
-    REQUIRE(data == *nullable);  
+    mp::borrower_not_null<int *> not_null = mp::make_borrower_not_null(&data);
+    mp::borrower<int *> nullable{ not_null };
+    REQUIRE(data == *not_null);
+    REQUIRE(data == *nullable);
   }
 }
 
@@ -71,10 +72,11 @@ TEST_CASE("copy constructor", "[borrower]")
     REQUIRE(parent3.get() == child1.get());
     delete owner2;
   }
-  SECTION("from not null") {
+  SECTION("from not null")
+  {
     int const data = 42;
-    mp::borrower_not_null<int const*> src = mp::make_borrower_not_null(&data);
-    mp::borrower<int const*> dest{ src };
+    mp::borrower_not_null<int const *> src = mp::make_borrower_not_null(&data);
+    mp::borrower<int const *> dest{ src };
     bool result = (*dest == data);
     REQUIRE(result);
   }
