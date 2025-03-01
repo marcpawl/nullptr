@@ -50,6 +50,20 @@ TEST_CASE("explicit constructor", "[maybe_null]")
   }
 }
 
+TEST_CASE("rvalue reference constructor", "[maybe_null]")
+{
+  SECTION("from child")
+  {
+    int *parentValue = new int(32);
+    std::unique_ptr<Child> data(new Child(parentValue));
+    mp::maybe_null<Parent *> const maybe_null(std::move(data.get()));
+    auto opt = maybe_null.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<Parent *> parent = opt.value();
+    REQUIRE(parent->value == parentValue);
+  }
+}
+
 #if 0
 TEST_CASE("copy constructor", "[maybe_null]")
 {
