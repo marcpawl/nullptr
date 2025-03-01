@@ -1,7 +1,7 @@
 
 
-cmake_minimum_required(VERSION 3.14)
-project(CompilationFailureTest)
+cmake_minimum_required(VERSION 3.31)
+set(CMAKE_CXX_STANDARD 20)
 
 get_target_property(GSL_INCLUDE_DIRS GSL INTERFACE_INCLUDE_DIRECTORIES)
 get_target_property(POINTERS_INCLUDE_DIRS pointers_library INTERFACE_INCLUDE_DIRECTORIES)
@@ -47,6 +47,7 @@ test_compile_failure(
 	"parameter cannot be nullptr")
 
 add_executable(pointers_tests 
+    maybe_null_tests.cpp
     borrower_tests.cpp 
     borrower_not_null_tests.cpp 
     owner_tests.cpp 
