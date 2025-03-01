@@ -38,7 +38,113 @@ namespace pointers {
   private:
     std::string message_;
   };
+} // pointers
+} // marcpawl
 
+namespace marcpawl {
+namespace pointers {
+
+// Based on gsl::strict_not_null
+//
+// strict_not_null
+//
+// Restricts a pointer or smart pointer to only hold non-null values,
+//
+// - provides a strict (i.e. explicit constructor from T) wrapper of not_null
+// - to be used for new code that wishes the design to be cleaner and make not_null
+//   checks intentional, or in old code that would like to make the transition.
+//
+//   To make the transition from not_null, incrementally replace not_null
+//   by strict_not_null and fix compilation errors
+//
+//   Expect to
+//   - remove all unneeded conversions from raw pointer to not_null and back
+//   - make API clear by specifying not_null in parameters where needed
+//   - remove unnecessary asserts
+//
+template <class T>
+class strict_not_null : public gsl::strict_not_null<T>
+{
+public:
+    template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    constexpr explicit strict_not_null(U&& u) : gsl::strict_not_null<T>(std::forward<U>(u))
+    {}
+
+    template <typename = std::enable_if_t<!std::is_same<std::nullptr_t, T>::value>>
+    constexpr explicit strict_not_null(T u) : gsl::strict_not_null<T>(u)
+    {}
+
+    template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    constexpr strict_not_null(const gsl::not_null<U>& other) : gsl::strict_not_null<T>(other)
+    {}
+
+    template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    constexpr strict_not_null(const strict_not_null<U>& other) : gsl::strict_not_null<T>(other)
+    {}
+
+    // To avoid invalidating the "not null" invariant, the contained pointer is actually copied
+    // instead of moved. If it is a custom pointer, its constructor could in theory throw exceptions.
+    strict_not_null(strict_not_null&& other) noexcept(std::is_nothrow_copy_constructible<T>::value) = default;
+    strict_not_null(const strict_not_null& other) = default;
+    strict_not_null& operator=(const strict_not_null& other) = default;
+    strict_not_null& operator=(const gsl::not_null<T>& other)
+    {
+	    gsl::strict_not_null<T>::operator=(other);
+        return *this;
+    }
+
+    // prevents compilation when someone attempts to assign a null pointer constant
+    strict_not_null(std::nullptr_t) = delete;
+    strict_not_null& operator=(std::nullptr_t) = delete;
+
+    // unwanted operators...pointers only point to single objects!
+    strict_not_null& operator++() = delete;
+    strict_not_null& operator--() = delete;
+    strict_not_null operator++(int) = delete;
+    strict_not_null operator--(int) = delete;
+    strict_not_null& operator+=(std::ptrdiff_t) = delete;
+    strict_not_null& operator-=(std::ptrdiff_t) = delete;
+    void operator[](std::ptrdiff_t) const = delete;
+};
+
+// more unwanted operators
+template <class T, class U>
+std::ptrdiff_t operator-(const strict_not_null<T>&, const strict_not_null<U>&) = delete;
+template <class T>
+strict_not_null<T> operator-(const strict_not_null<T>&, std::ptrdiff_t) = delete;
+template <class T>
+strict_not_null<T> operator+(const strict_not_null<T>&, std::ptrdiff_t) = delete;
+template <class T>
+strict_not_null<T> operator+(std::ptrdiff_t, const strict_not_null<T>&) = delete;
+
+template <class T>
+auto make_strict_not_null(T&& t) noexcept
+{
+    return strict_not_null<std::remove_cv_t<std::remove_reference_t<T>>>{std::forward<T>(t)};
+}
+
+#if (defined(__cpp_deduction_guides) && (__cpp_deduction_guides >= 201611L))
+
+// deduction guides to prevent the ctad-maybe-unsupported warning
+template <class T>
+strict_not_null(T) -> strict_not_null<T>;
+
+#endif // ( defined(__cpp_deduction_guides) && (__cpp_deduction_guides >= 201611L) )
+
+} // namespace pointers
+} // namespace marcpawl
+
+namespace std
+{
+template <class T>
+struct hash<marcpawl::pointers::strict_not_null<T>> : gsl::not_null_hash<marcpawl::pointers::strict_not_null<T>>
+{
+};
+
+} // namespace std
+
+namespace marcpawl {
+namespace pointers {
   namespace details {
 
     enum struct null_policy { nullable, not_null };
