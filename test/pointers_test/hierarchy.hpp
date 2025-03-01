@@ -9,6 +9,11 @@ struct Parent
     // NOLINTNEXTLINE (cppcoreguidelines-owning-memory)
     value = new int(0);
   }
+  
+  explicit Parent(int* data)
+  : value(data)
+  {}
+
   Parent(Parent &other) = delete;
   Parent(Parent &&other) noexcept
   {
@@ -48,6 +53,9 @@ struct Child : Parent
 {
   int another_value = 0;
 
+  explicit Child(int* parentValue)
+    : Parent(parentValue)
+    {}
   Child() = default;
   Child(Child &other) = delete;
   Child(Child &&other) = default;

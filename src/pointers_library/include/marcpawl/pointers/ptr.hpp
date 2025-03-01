@@ -45,6 +45,8 @@ namespace pointers {
 namespace marcpawl {
 namespace pointers {
 
+  template<typename T> class maybe_null;
+
   // Based on gsl::strict_not_null
   //
   // strict_not_null
@@ -73,18 +75,24 @@ namespace pointers {
   private:
     T ptr_;
 
-  private:
+  public:
     strict_not_null() = delete;
 
+  private:
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr strict_not_null(U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
-      : ptr_(std::forward<U>(u))
+      : ptr_(u)
     {}
 
 
   public:
+    constexpr strict_not_null(const strict_not_null<T> &other)
+      : ptr_(other.ptr_)
+    {}
+
+#if 0
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr strict_not_null(const strict_not_null<U> &other)
@@ -94,8 +102,9 @@ namespace pointers {
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr strict_not_null(const strict_not_null<U> &&other)
-      : gsl::strict_not_null<T>(other)
+      : ptr_(other.ptr_)
     {}
+#endif
 
     constexpr ~strict_not_null() = default;
 
@@ -115,6 +124,19 @@ namespace pointers {
       return *this;
     }
 
+  private:
+    constexpr gsl::details::value_or_reference_return_t<T> get() const
+      noexcept(noexcept(
+        gsl::details::value_or_reference_return_t<T>{ std::declval<T &>() }))
+    {
+      return ptr_;
+    }
+
+  public:
+    // constexpr operator T() const { return get(); }
+    constexpr decltype(auto) operator->() const { return get(); }
+    constexpr decltype(auto) operator*() const { return *get(); }
+
     // unwanted operators...pointers only point to single objects!
     strict_not_null &operator++() = delete;
     strict_not_null &operator--() = delete;
@@ -123,6 +145,8 @@ namespace pointers {
     strict_not_null &operator+=(std::ptrdiff_t) = delete;
     strict_not_null &operator-=(std::ptrdiff_t) = delete;
     void operator[](std::ptrdiff_t) const = delete;
+
+    friend class maybe_null<T>;
   };
 
   // more unwanted operators
@@ -235,24 +259,28 @@ namespace pointers {
     maybe_null &operator-=(std::ptrdiff_t) = delete;
     void operator[](std::ptrdiff_t) const = delete;
 
-    std::optional<strict_not_null<T> const> as_not_null() const
+    std::optional<strict_not_null<T>> as_not_null() const
     {
       if (ptr_ == nullptr) {
         return std::nullopt;
       } else {
-        return make_strict_not_null<T>(ptr_);
+        strict_not_null<T> ptr{ ptr_ };
+        std::optional<strict_not_null<T>> result{ ptr };
+        return result;
       }
     }
 
+#if 0
 
     std::optional<strict_not_null<T>> as_not_null()
     {
       if (ptr_ == nullptr) {
         return std::nullopt;
       } else {
-        return make_strict_not_null<T>(ptr_);
+        return strict_not_null<T>(ptr_);
       }
     }
+#endif
 
   private:
     T ptr_;
