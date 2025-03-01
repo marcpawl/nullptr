@@ -214,17 +214,26 @@ namespace pointers {
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    constexpr maybe_null(U &u) noexcept(
+      std::is_nothrow_move_constructible<T>::value)
+      : ptr_(std::forward<U>(u))
+    {}
+
+
+    template<typename U,
+      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr maybe_null(U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
       : ptr_(std::forward<U>(u))
     {}
 
-    template<
-      typename = std::enable_if_t<!std::is_same<std::nullptr_t, T>::value>>
-    constexpr maybe_null(T u) noexcept(
-      std::is_nothrow_move_constructible<T>::value)
-      : ptr_(std::move(u))
-    {}
+
+    // template<typename U,
+    //   typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    // constexpr maybe_null(T u) noexcept(
+    //   std::is_nothrow_move_constructible<T>::value)
+    //   : ptr_(std::move(u))
+    // {}
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>

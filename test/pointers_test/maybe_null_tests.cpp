@@ -1,4 +1,4 @@
-// #include "hierarchy.hpp"
+#include "hierarchy.hpp"
 #include "marcpawl/pointers/ptr.hpp"
 #include <catch2/catch_test_macros.hpp>
 // #include <sstream>
@@ -38,17 +38,16 @@ TEST_CASE("explicit constructor", "[maybe_null]")
     mp::strict_not_null<int *> &not_null = opt.value();
     REQUIRE(data == *not_null);
   }
-
-  // SECTION("from child")
-  // {
-  //   int* parentValue = new int(32);
-  //   std::unique_ptr<Child> data(new Child(parentValue));
-  //   mp::maybe_null<Parent *> const maybe_null(data.get());
-  //   auto opt = maybe_null.as_not_null();
-  //   REQUIRE( opt.has_value());
-  //   mp::strict_not_null<Parent*> parent = opt.value();
-  //   REQUIRE(parent->value == parentValue);
-  // }
+  SECTION("from child")
+  {
+    int *parentValue = new int(32);
+    std::unique_ptr<Child> data(new Child(parentValue));
+    mp::maybe_null<Parent *> const maybe_null(data.get());
+    auto opt = maybe_null.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<Parent *> parent = opt.value();
+    REQUIRE(parent->value == parentValue);
+  }
 }
 
 #if 0
