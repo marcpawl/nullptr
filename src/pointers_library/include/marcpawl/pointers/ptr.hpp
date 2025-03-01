@@ -79,12 +79,14 @@ namespace pointers {
     strict_not_null() = delete;
 
   private:
+    // Used to indicate that the is no construction from a pointer.
     struct privileged
     {
     };
+
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    constexpr strict_not_null(privileged const &, U &&u) noexcept(
+    explicit constexpr strict_not_null(privileged const &, U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
       : ptr_(u)
     {}
@@ -96,12 +98,6 @@ namespace pointers {
     {}
 
 #if 0
-    template<typename U,
-      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    constexpr strict_not_null(const strict_not_null<U> &other)
-      : ptr_(other.ptr_)
-    {}
-
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr strict_not_null(const strict_not_null<U> &&other)
@@ -149,8 +145,7 @@ namespace pointers {
     strict_not_null &operator-=(std::ptrdiff_t) = delete;
     void operator[](std::ptrdiff_t) const = delete;
 
-    template<typename U>
-    friend class maybe_null;
+    template<typename U> friend class maybe_null;
   };
 
   // more unwanted operators
@@ -291,8 +286,7 @@ namespace pointers {
   private:
     T ptr_;
 
-    template<typename U>
-    friend class maybe_null;
+    template<typename U> friend class maybe_null;
   };
 
   template<class T> auto make_maybe_null(T &&t) noexcept
