@@ -144,6 +144,180 @@ struct hash<marcpawl::pointers::strict_not_null<T>> : gsl::not_null_hash<marcpaw
 } // namespace std
 
 namespace marcpawl {
+	namespace pointers {
+
+//
+// maybe_null
+//
+// Holds a pointer, but has not pointer operations.  To get the pointer
+// use maybe_null#as_non_null()
+//
+// Has zero size overhead over T.
+//
+// If T is a pointer (i.e. T == U*) then
+// - allow construction from U*
+// - disallow construction from nullptr_t
+// - disallow default construction
+// - ensure construction from null U* fails
+// - allow implicit conversion to U*
+//
+template <class T>
+class maybe_null
+{
+public:
+    static_assert(gsl::details::is_comparable_to_nullptr<T>::value, "T cannot be compared to nullptr.");
+
+    constexpr maybe_null() noexcept : ptr_(nullptr) 
+    {}
+
+    template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    constexpr maybe_null(U&& u) noexcept(std::is_nothrow_move_constructible<T>::value) : ptr_(std::forward<U>(u))
+    {
+    }
+
+    template <typename = std::enable_if_t<!std::is_same<std::nullptr_t, T>::value>>
+    constexpr maybe_null(T u) noexcept(std::is_nothrow_move_constructible<T>::value) : ptr_(std::move(u))
+    {
+    }
+
+    template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    constexpr maybe_null(const maybe_null<U>& other) noexcept(std::is_nothrow_move_constructible<T>::value) : maybe_null(other.get())
+    {}
+
+    maybe_null(const maybe_null& other) = default;
+    maybe_null& operator=(const maybe_null& other) = default;
+
+private:
+    constexpr gsl::details::value_or_reference_return_t<T> get() const
+        noexcept(noexcept(gsl::details::value_or_reference_return_t<T>{std::declval<T&>()}))
+    {
+        return ptr_;
+    }
+
+public:
+
+    maybe_null(std::nullptr_t) 
+	    : ptr_(nullptr)
+    {}
+
+    maybe_null& operator=(std::nullptr_t) {
+	    ptr_= nullptr;
+	    return *this;
+    }
+
+    // unwanted operators...pointers only point to single objects!
+    maybe_null& operator++() = delete;
+    maybe_null& operator--() = delete;
+    maybe_null operator++(int) = delete;
+    maybe_null operator--(int) = delete;
+    maybe_null& operator+=(std::ptrdiff_t) = delete;
+    maybe_null& operator-=(std::ptrdiff_t) = delete;
+    void operator[](std::ptrdiff_t) const = delete;
+
+private:
+    T ptr_;
+};
+
+template <class T>
+auto make_maybe_null(T&& t) noexcept
+{
+    return maybe_null<std::remove_cv_t<std::remove_reference_t<T>>>{std::forward<T>(t)};
+}
+
+#if !defined(GSL_NO_IOSTREAMS)
+template <class T>
+std::ostream& operator<<(std::ostream& os, const maybe_null<T>& val)
+{
+    os << val.get();
+    return os;
+}
+#endif // !defined(GSL_NO_IOSTREAMS)
+
+template <class T, class U>
+auto operator==(const maybe_null<T>& lhs,
+                const maybe_null<U>& rhs) noexcept(noexcept(lhs.get() == rhs.get()))
+    -> decltype(lhs.get() == rhs.get())
+{
+    return lhs.get() == rhs.get();
+}
+
+template <class T, class U>
+auto operator!=(const maybe_null<T>& lhs,
+                const maybe_null<U>& rhs) noexcept(noexcept(lhs.get() != rhs.get()))
+    -> decltype(lhs.get() != rhs.get())
+{
+    return lhs.get() != rhs.get();
+}
+
+template <class T, class U>
+auto operator<(const maybe_null<T>& lhs,
+               const maybe_null<U>& rhs) noexcept(noexcept(std::less<>{}(lhs.get(), rhs.get())))
+    -> decltype(std::less<>{}(lhs.get(), rhs.get()))
+{
+    return std::less<>{}(lhs.get(), rhs.get());
+}
+
+template <class T, class U>
+auto operator<=(const maybe_null<T>& lhs,
+                const maybe_null<U>& rhs) noexcept(noexcept(std::less_equal<>{}(lhs.get(), rhs.get())))
+    -> decltype(std::less_equal<>{}(lhs.get(), rhs.get()))
+{
+    return std::less_equal<>{}(lhs.get(), rhs.get());
+}
+
+template <class T, class U>
+auto operator>(const maybe_null<T>& lhs,
+               const maybe_null<U>& rhs) noexcept(noexcept(std::greater<>{}(lhs.get(), rhs.get())))
+    -> decltype(std::greater<>{}(lhs.get(), rhs.get()))
+{
+    return std::greater<>{}(lhs.get(), rhs.get());
+}
+
+template <class T, class U>
+auto operator>=(const maybe_null<T>& lhs,
+                const maybe_null<U>& rhs) noexcept(noexcept(std::greater_equal<>{}(lhs.get(), rhs.get())))
+    -> decltype(std::greater_equal<>{}(lhs.get(), rhs.get()))
+{
+    return std::greater_equal<>{}(lhs.get(), rhs.get());
+}
+
+// more unwanted operators
+template <class T, class U>
+std::ptrdiff_t operator-(const maybe_null<T>&, const maybe_null<U>&) = delete;
+template <class T>
+maybe_null<T> operator-(const maybe_null<T>&, std::ptrdiff_t) = delete;
+template <class T>
+maybe_null<T> operator+(const maybe_null<T>&, std::ptrdiff_t) = delete;
+template <class T>
+maybe_null<T> operator+(std::ptrdiff_t, const maybe_null<T>&) = delete;
+
+
+template <class T, class U = decltype(std::declval<const T&>().get()), bool = std::is_default_constructible<std::hash<U>>::value>
+struct maybe_null_hash
+{
+    std::size_t operator()(const T& value) const { return std::hash<U>{}(value.get()); }
+};
+
+template <class T, class U>
+struct maybe_null_hash<T, U, false>
+{
+    maybe_null_hash() = delete;
+    maybe_null_hash(const maybe_null_hash&) = delete;
+    maybe_null_hash& operator=(const maybe_null_hash&) = delete;
+};
+
+} // namespace pointers
+} // namespace marcpawl
+
+namespace std
+{
+template <class T>
+struct hash<marcpawl::pointers::maybe_null<T>> : marcpawl::pointers::maybe_null_hash<marcpawl::pointers::maybe_null<T>>
+{
+};
+
+} // namespace std
+namespace marcpawl {
 namespace pointers {
   namespace details {
 
