@@ -149,7 +149,8 @@ namespace pointers {
     strict_not_null &operator-=(std::ptrdiff_t) = delete;
     void operator[](std::ptrdiff_t) const = delete;
 
-    friend class maybe_null<T>;
+    template<typename U>
+    friend class maybe_null;
   };
 
   // more unwanted operators
@@ -234,7 +235,7 @@ namespace pointers {
       : maybe_null(other.get())
     {}
 
-    maybe_null(maybe_null const &other) = default;
+    // maybe_null(maybe_null const &other) = default;
     maybe_null &operator=(maybe_null const &other) = default;
 
   private:
@@ -289,6 +290,9 @@ namespace pointers {
 
   private:
     T ptr_;
+
+    template<typename U>
+    friend class maybe_null;
   };
 
   template<class T> auto make_maybe_null(T &&t) noexcept

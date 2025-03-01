@@ -1,6 +1,6 @@
 #include <cassert>
 
-// #include "hierarchy.hpp"
+#include "hierarchy.hpp"
 #include "marcpawl/pointers/ptr.hpp"
 #include <catch2/catch_test_macros.hpp>
 // #include <sstream>
@@ -28,38 +28,33 @@ TEST_CASE("operator T", "[not_null]")
 }
 
 
-#if 0
 TEST_CASE("copy constructor", "[maybe_null]")
 {
-  SECTION("from parent")
+  SECTION("same types")
   {
-    gsl::owner<Parent *> owner1{ new Parent() };
-    mp::maybe_null<Parent *> const parent1{ owner1 };
-    mp::maybe_null<Parent *> const parent2(parent1);
-    REQUIRE(owner1 == parent1.get());
-    REQUIRE(parent2.get() == parent1.get());
-    delete owner1;
+    int const data = 4;
+    mp::maybe_null<int const *> const source{ &data };
+    mp::maybe_null<int const *> const destination{ source };
+    auto opt = destination.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<int const *> const &not_null = opt.value();
+    REQUIRE(data == *not_null);
   }
-  SECTION("from child")
+  SECTION("inherited types")
   {
-    // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
-    gsl::owner<Child *> owner2(new Child());
-    mp::maybe_null<Child *> const child1(owner2);
-    mp::maybe_null<Parent *> const parent3(child1);
-    REQUIRE(owner2 == child1.get());
-    REQUIRE(parent3.get() == child1.get());
-    delete owner2;
-  }
-  SECTION("from not null")
-  {
-    int const data = 42;
-    mp::maybe_null_not_null<int const *> src = mp::make_maybe_null_not_null(&data);
-    mp::maybe_null<int const *> dest{ src };
-    bool result = (*dest == data);
-    REQUIRE(result);
+    int *data = new int{ 4 };
+    Child child(data);
+    mp::maybe_null<Child *> const source{ &child };
+    mp::maybe_null<Parent *> const destination{ source };
+    auto opt = destination.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<Parent *> const &not_null = opt.value();
+    int const actual = not_null->get_value();
+    REQUIRE(*data == actual);
   }
 }
 
+#if 0
 TEST_CASE("move constructor", "[maybe_null]")
 {
   SECTION("from parent")
