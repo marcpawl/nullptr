@@ -91,7 +91,7 @@ namespace pointers {
 
 
   public:
-    constexpr strict_not_null(const strict_not_null<T> &other)
+    constexpr strict_not_null(strict_not_null<T> const &other)
       : ptr_(other.ptr_)
     {}
 
@@ -113,7 +113,7 @@ namespace pointers {
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    strict_not_null &operator=(const strict_not_null<U> &other)
+    strict_not_null &operator=(strict_not_null<U> const &other)
     {
       ptr_ = other.ptr_;
       return *this;
@@ -154,17 +154,17 @@ namespace pointers {
 
   // more unwanted operators
   template<class T, class U>
-  std::ptrdiff_t operator-(const strict_not_null<T> &,
-    const strict_not_null<U> &) = delete;
+  std::ptrdiff_t operator-(strict_not_null<T> const &,
+    strict_not_null<U> const &) = delete;
   template<class T>
-  strict_not_null<T> operator-(const strict_not_null<T> &,
+  strict_not_null<T> operator-(strict_not_null<T> const &,
     std::ptrdiff_t) = delete;
   template<class T>
-  strict_not_null<T> operator+(const strict_not_null<T> &,
+  strict_not_null<T> operator+(strict_not_null<T> const &,
     std::ptrdiff_t) = delete;
   template<class T>
   strict_not_null<T> operator+(std::ptrdiff_t,
-    const strict_not_null<T> &) = delete;
+    strict_not_null<T> const &) = delete;
 
 #if (defined(__cpp_deduction_guides) && (__cpp_deduction_guides >= 201611L))
 
@@ -227,23 +227,15 @@ namespace pointers {
       : ptr_(std::forward<U>(u))
     {}
 
-
-    // template<typename U,
-    //   typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    // constexpr maybe_null(T u) noexcept(
-    //   std::is_nothrow_move_constructible<T>::value)
-    //   : ptr_(std::move(u))
-    // {}
-
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    constexpr maybe_null(const maybe_null<U> &other) noexcept(
+    constexpr maybe_null(maybe_null<U> const &other) noexcept(
       std::is_nothrow_move_constructible<T>::value)
       : maybe_null(other.get())
     {}
 
-    maybe_null(const maybe_null &other) = default;
-    maybe_null &operator=(const maybe_null &other) = default;
+    maybe_null(maybe_null const &other) = default;
+    maybe_null &operator=(maybe_null const &other) = default;
 
   private:
     constexpr gsl::details::value_or_reference_return_t<T> get() const
@@ -323,14 +315,14 @@ namespace pointers {
   }
 
   template<class T, class U>
-  auto operator!=(const maybe_null<T> &lhs, const maybe_null<U> &rhs) noexcept(
+  auto operator!=(maybe_null<T> const &lhs, maybe_null<U> const &rhs) noexcept(
     noexcept(lhs.get() != rhs.get())) -> decltype(lhs.get() != rhs.get())
   {
     return lhs.get() != rhs.get();
   }
 
   template<class T, class U>
-  auto operator<(const maybe_null<T> &lhs, const maybe_null<U> &rhs) noexcept(
+  auto operator<(maybe_null<T> const &lhs, maybe_null<U> const &rhs) noexcept(
     noexcept(std::less<>{}(lhs.get(), rhs.get())))
     -> decltype(std::less<>{}(lhs.get(), rhs.get()))
   {
@@ -338,7 +330,7 @@ namespace pointers {
   }
 
   template<class T, class U>
-  auto operator<=(const maybe_null<T> &lhs, const maybe_null<U> &rhs) noexcept(
+  auto operator<=(maybe_null<T> const &lhs, maybe_null<U> const &rhs) noexcept(
     noexcept(std::less_equal<>{}(lhs.get(), rhs.get())))
     -> decltype(std::less_equal<>{}(lhs.get(), rhs.get()))
   {
@@ -346,7 +338,7 @@ namespace pointers {
   }
 
   template<class T, class U>
-  auto operator>(const maybe_null<T> &lhs, const maybe_null<U> &rhs) noexcept(
+  auto operator>(maybe_null<T> const &lhs, maybe_null<U> const &rhs) noexcept(
     noexcept(std::greater<>{}(lhs.get(), rhs.get())))
     -> decltype(std::greater<>{}(lhs.get(), rhs.get()))
   {
@@ -354,7 +346,7 @@ namespace pointers {
   }
 
   template<class T, class U>
-  auto operator>=(const maybe_null<T> &lhs, const maybe_null<U> &rhs) noexcept(
+  auto operator>=(maybe_null<T> const &lhs, maybe_null<U> const &rhs) noexcept(
     noexcept(std::greater_equal<>{}(lhs.get(), rhs.get())))
     -> decltype(std::greater_equal<>{}(lhs.get(), rhs.get()))
   {
@@ -363,22 +355,22 @@ namespace pointers {
 
   // more unwanted operators
   template<class T, class U>
-  std::ptrdiff_t operator-(const maybe_null<T> &,
-    const maybe_null<U> &) = delete;
+  std::ptrdiff_t operator-(maybe_null<T> const &,
+    maybe_null<U> const &) = delete;
   template<class T>
-  maybe_null<T> operator-(const maybe_null<T> &, std::ptrdiff_t) = delete;
+  maybe_null<T> operator-(maybe_null<T> const &, std::ptrdiff_t) = delete;
   template<class T>
-  maybe_null<T> operator+(const maybe_null<T> &, std::ptrdiff_t) = delete;
+  maybe_null<T> operator+(maybe_null<T> const &, std::ptrdiff_t) = delete;
   template<class T>
-  maybe_null<T> operator+(std::ptrdiff_t, const maybe_null<T> &) = delete;
+  maybe_null<T> operator+(std::ptrdiff_t, maybe_null<T> const &) = delete;
 
 
   template<class T,
-    class U = decltype(std::declval<const T &>().get()),
+    class U = decltype(std::declval<T const &>().get()),
     bool = std::is_default_constructible<std::hash<U>>::value>
   struct maybe_null_hash
   {
-    std::size_t operator()(const T &value) const
+    std::size_t operator()(T const &value) const
     {
       return std::hash<U>{}(value.get());
     }
@@ -387,8 +379,8 @@ namespace pointers {
   template<class T, class U> struct maybe_null_hash<T, U, false>
   {
     maybe_null_hash() = delete;
-    maybe_null_hash(const maybe_null_hash &) = delete;
-    maybe_null_hash &operator=(const maybe_null_hash &) = delete;
+    maybe_null_hash(maybe_null_hash const &) = delete;
+    maybe_null_hash &operator=(maybe_null_hash const &) = delete;
   };
 
 }// namespace pointers
@@ -617,8 +609,8 @@ namespace pointers {
       ownership_policy lhs_ownership,
       null_policy rhs_nullable,
       ownership_policy rhs_ownership>
-    std::ptrdiff_t operator-(const pointer<T, lhs_nullable, lhs_ownership> &,
-      const pointer<U, rhs_nullable, rhs_ownership> &) = delete;
+    std::ptrdiff_t operator-(pointer<T, lhs_nullable, lhs_ownership> const &,
+      pointer<U, rhs_nullable, rhs_ownership> const &) = delete;
 
     template<class T,
       null_policy lhs_nullable,
@@ -626,7 +618,7 @@ namespace pointers {
       null_policy rhs_nullable,
       ownership_policy rhs_ownership>
     pointer<T, lhs_nullable, lhs_ownership> operator-(
-      const pointer<T, rhs_nullable, rhs_ownership> &,
+      pointer<T, rhs_nullable, rhs_ownership> const &,
       std::ptrdiff_t) = delete;
 
     template<class T,
@@ -635,7 +627,7 @@ namespace pointers {
       null_policy rhs_nullable,
       ownership_policy rhs_ownership>
     pointer<T, lhs_nullable, lhs_ownership> operator+(
-      const pointer<T, rhs_nullable, rhs_ownership> &,
+      pointer<T, rhs_nullable, rhs_ownership> const &,
       std::ptrdiff_t) = delete;
 
     template<class T,
@@ -644,7 +636,7 @@ namespace pointers {
       null_policy rhs_nullable,
       ownership_policy rhs_ownership>
     pointer<T, lhs_nullable, lhs_ownership> operator+(std::ptrdiff_t,
-      const pointer<T, rhs_nullable, rhs_ownership> &) = delete;
+      pointer<T, rhs_nullable, rhs_ownership> const &) = delete;
 
   }// namespace details
 
@@ -711,7 +703,7 @@ template<typename T,
 struct std::hash<marcpawl::pointers::details::pointer<T, nullable, ownership>>
 {
   std::size_t operator()(
-    const marcpawl::pointers::details::pointer<T, nullable, ownership> &b)
+    marcpawl::pointers::details::pointer<T, nullable, ownership> const &b)
     const noexcept
   {
     return std::hash<T>{}(b.get());
