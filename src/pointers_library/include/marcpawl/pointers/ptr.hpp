@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <exception>
 #include <functional>
@@ -10,12 +11,10 @@
 #include <string>
 #include <type_traits>
 #include <unordered_set>
-
-#include <concepts>
-#include <gsl/gsl>
-#include <iostream>
-#include <type_traits>
 #include <utility>
+#include <variant>
+
+#include <gsl/gsl>
 
 #include "marcpawl/pointers/details.hpp"
 
@@ -212,6 +211,9 @@ namespace pointers {
     static_assert(gsl::details::is_comparable_to_nullptr<T>::value,
       "T cannot be compared to nullptr.");
 
+    using optional_not_null = std::optional<strict_not_null<T>>;
+    using variant_not_null = std::variant<std::nullptr_t, strict_not_null<T>>;
+
     constexpr maybe_null() noexcept : ptr_(nullptr) {}
 
     constexpr maybe_null(std::nullptr_t) noexcept : ptr_(nullptr) {}
@@ -273,15 +275,25 @@ namespace pointers {
 
     constexpr bool operator!() const noexcept { return ptr_ == nullptr; }
 
-    constexpr std::optional<strict_not_null<T>> as_not_null() const
+    constexpr optional_not_null as_optional_not_null() const
     {
       if (ptr_ == nullptr) {
         return std::nullopt;
       } else {
         typename strict_not_null<T>::privileged privileged;
         strict_not_null<T> ptr{ privileged, ptr_ };
-        std::optional<strict_not_null<T>> result{ ptr };
-        return result;
+        return optional_not_null{ ptr };
+      }
+    }
+
+    constexpr variant_not_null as_variant_not_null() const
+    {
+      if (ptr_ == nullptr) {
+        return nullptr;
+      } else {
+        typename strict_not_null<T>::privileged privileged;
+        strict_not_null<T> ptr{ privileged, ptr_ };
+        return ptr;
       }
     }
 

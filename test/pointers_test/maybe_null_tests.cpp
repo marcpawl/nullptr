@@ -10,14 +10,14 @@ namespace mp = marcpawl::pointers;
 TEST_CASE("maybe_null default constructor", "[maybe_null]")
 {
   mp::maybe_null<int *> const maybe_null;
-  auto opt = maybe_null.as_not_null();
+  auto opt = maybe_null.as_optional_not_null();
   REQUIRE(!opt.has_value());
 }
 
 TEST_CASE("explicit nullptr", "[maybe_null]")
 {
   mp::maybe_null<int *> const maybe_null{ nullptr };
-  auto opt = maybe_null.as_not_null();
+  auto opt = maybe_null.as_optional_not_null();
   REQUIRE(!opt.has_value());
 }
 
@@ -27,14 +27,14 @@ TEST_CASE("explicit constructor", "[maybe_null]")
   {
     int *data = nullptr;
     mp::maybe_null<int *> const maybe_null(data);
-    auto opt = maybe_null.as_not_null();
+    auto opt = maybe_null.as_optional_not_null();
     REQUIRE(!opt.has_value());
   }
   SECTION("from non-null")
   {
     int data = 32;
     mp::maybe_null<int *> maybe_null(&data);
-    auto opt = maybe_null.as_not_null();
+    auto opt = maybe_null.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<int *> &not_null = opt.value();
     REQUIRE(data == *not_null);
@@ -44,7 +44,7 @@ TEST_CASE("explicit constructor", "[maybe_null]")
     int *parentValue = new int(32);
     std::unique_ptr<Child> data(new Child(parentValue));
     mp::maybe_null<Parent *> const maybe_null(data.get());
-    auto opt = maybe_null.as_not_null();
+    auto opt = maybe_null.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<Parent *> parent = opt.value();
     REQUIRE(parent->value == parentValue);
@@ -58,7 +58,7 @@ TEST_CASE("rvalue reference constructor", "[maybe_null]")
     int *parentValue = new int(32);
     std::unique_ptr<Child> data(new Child(parentValue));
     mp::maybe_null<Parent *> const maybe_null(std::move(data.get()));
-    auto opt = maybe_null.as_not_null();
+    auto opt = maybe_null.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<Parent *> parent = opt.value();
     REQUIRE(parent->value == parentValue);
@@ -73,7 +73,7 @@ TEST_CASE("copy constructor", "[maybe_null]")
     *owner1->value = 42;
     mp::maybe_null<Parent *> const parent1{ owner1 };
     mp::maybe_null<Parent *> const parent2(parent1);
-    auto opt = parent2.as_not_null();
+    auto opt = parent2.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<Parent *> not_null = opt.value();
     int actual = not_null->get_value();
@@ -86,7 +86,7 @@ TEST_CASE("copy constructor", "[maybe_null]")
     *owner1->value = 42;
     mp::maybe_null<Child *> const parent1{ owner1 };
     mp::maybe_null<Parent *> const parent2(parent1);
-    auto opt = parent2.as_not_null();
+    auto opt = parent2.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<Parent *> not_null = opt.value();
     int actual = not_null->get_value();
@@ -97,7 +97,7 @@ TEST_CASE("copy constructor", "[maybe_null]")
   {
     mp::maybe_null<Child *> const parent1{ nullptr };
     mp::maybe_null<Parent *> const parent2(parent1);
-    auto opt = parent2.as_not_null();
+    auto opt = parent2.as_optional_not_null();
     REQUIRE(!opt.has_value());
   }
 }
@@ -110,7 +110,7 @@ TEST_CASE("move constructor", "[maybe_null]")
     *owner1->value = 42;
     mp::maybe_null<Parent *> const parent1{ owner1 };
     mp::maybe_null<Parent *> const parent2(std::move(parent1));
-    auto opt = parent2.as_not_null();
+    auto opt = parent2.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<Parent *> not_null = opt.value();
     int actual = not_null->get_value();
@@ -123,7 +123,7 @@ TEST_CASE("move constructor", "[maybe_null]")
     *owner1->value = 42;
     mp::maybe_null<Child *> const parent1{ owner1 };
     mp::maybe_null<Parent *> const parent2(std::move(parent1));
-    auto opt = parent2.as_not_null();
+    auto opt = parent2.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<Parent *> not_null = opt.value();
     int actual = not_null->get_value();
@@ -134,7 +134,7 @@ TEST_CASE("move constructor", "[maybe_null]")
   {
     mp::maybe_null<Child *> const parent1{ nullptr };
     mp::maybe_null<Parent *> const parent2(std::move(parent1));
-    auto opt = parent2.as_not_null();
+    auto opt = parent2.as_optional_not_null();
     REQUIRE(!opt.has_value());
   }
 }
@@ -147,7 +147,7 @@ TEST_CASE("assignment", "[maybe_null]")
     mp::maybe_null<int const *> const source{ &data };
     mp::maybe_null<int const *> destination;
     destination = source;
-    auto opt = destination.as_not_null();
+    auto opt = destination.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<int const *> const &not_null = opt.value();
     REQUIRE(data == *not_null);
@@ -159,7 +159,7 @@ TEST_CASE("assignment", "[maybe_null]")
     mp::maybe_null<Child *> const source{ &child };
     mp::maybe_null<Parent *> destination;
     destination = source;
-    auto opt = destination.as_not_null();
+    auto opt = destination.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<Parent *> const &not_null = opt.value();
     int const actual = not_null->get_value();
@@ -176,7 +176,7 @@ TEST_CASE("move assignment", "[maybe_null]")
     mp::maybe_null<int const *> const source{ &data };
     mp::maybe_null<int const *> destination;
     destination = std::move(source);
-    auto opt = destination.as_not_null();
+    auto opt = destination.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<int const *> const &not_null = opt.value();
     REQUIRE(data == *not_null);
@@ -188,7 +188,7 @@ TEST_CASE("move assignment", "[maybe_null]")
     mp::maybe_null<Child *> const source{ &child };
     mp::maybe_null<Parent *> destination;
     destination = std::move(source);
-    auto opt = destination.as_not_null();
+    auto opt = destination.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<Parent *> const &not_null = opt.value();
     int const actual = not_null->get_value();
@@ -217,7 +217,7 @@ TEST_CASE("make_maybe_null", "[maybe_null]")
 {
   int const data = 4;
   mp::maybe_null<int const *> const maybe_null = mp::make_maybe_null(&data);
-  auto opt = maybe_null.as_not_null();
+  auto opt = maybe_null.as_optional_not_null();
   REQUIRE(opt.has_value());
   int const *actual = opt.value();
   REQUIRE(data == *actual);
@@ -302,6 +302,31 @@ TEST_CASE("comparison operators maybe_null", "[maybe_null]")
     REQUIRE(two_lt ^ two_gt);
     REQUIRE((zero_lt && two_lt));
     REQUIRE((zero_lt || two_lt));
+  }
+}
+
+
+TEST_CASE("as_variant_not_null", "[maybe_null]")
+{
+  SECTION("from typed nullptr")
+  {
+    int *data = nullptr;
+    mp::maybe_null<int *> const maybe_null(data);
+    mp::maybe_null<int *>::variant_not_null variant =
+      maybe_null.as_variant_not_null();
+    bool is_null = std::holds_alternative<std::nullptr_t>(variant);
+    REQUIRE(is_null);
+  }
+  SECTION("from non-null")
+  {
+    int data = 32;
+    mp::maybe_null<int *> maybe_null(&data);
+    auto variant = maybe_null.as_variant_not_null();
+    auto has_data = std::holds_alternative<mp::strict_not_null<int *>>(variant);
+    REQUIRE(has_data);
+    mp::strict_not_null<int *> not_null =
+      std::get<mp::strict_not_null<int *>>(variant);
+    REQUIRE(data == *not_null);
   }
 }
 
