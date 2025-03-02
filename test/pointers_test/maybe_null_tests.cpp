@@ -330,6 +330,31 @@ TEST_CASE("as_variant_not_null", "[maybe_null]")
   }
 }
 
+TEST_CASE("visit", "[maybe_null]")
+{
+  SECTION("from typed nullptr")
+  {
+    int *data = nullptr;
+    mp::maybe_null<int *> const maybe_null(data);
+    bool is_null = false;
+    auto handle_null = [&is_null](std::nullptr_t) { is_null = true; };
+    auto handle_data = [&is_null](auto &&) { is_null = false; };
+    maybe_null.visit(handle_null, handle_data);
+    REQUIRE(is_null);
+  }
+  SECTION("from non-null")
+  {
+    int data = 32;
+    mp::maybe_null<int *> maybe_null(&data);
+    auto handle_null = [](std::nullptr_t) {};
+    auto handle_data = [](mp::strict_not_null<int *> &&not_null) {
+      (*not_null) += 1;
+    };
+    maybe_null.visit(handle_null, handle_data);
+    REQUIRE(data == 33);
+  }
+}
+
 // TEST_CASE("hashing", "[maybe_null]")
 // {
 //   int data = 3;

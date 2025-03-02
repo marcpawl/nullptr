@@ -297,6 +297,21 @@ namespace pointers {
       }
     }
 
+    // TODO noexcept
+    // TODO constexpr
+    // TODO constraints
+
+    void visit(auto handle_nullptr, auto handle_not_null) const
+    {
+      if (ptr_ == nullptr) {
+        handle_nullptr(nullptr);
+      } else {
+        typename strict_not_null<T>::privileged privileged;
+        strict_not_null<T> ptr{ privileged, ptr_ };
+        handle_not_null(std::move(ptr));
+      }
+    }
+
     friend std::ostream &operator<<(std::ostream &os, maybe_null const &obj)
     {
       os << obj.ptr_;
