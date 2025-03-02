@@ -14,14 +14,15 @@ TEST_CASE("maybe_null default constructor", "[maybe_null]")
   REQUIRE(!opt.has_value());
 }
 
+TEST_CASE("explicit nullptr", "[maybe_null]")
+{
+  mp::maybe_null<int *> const maybe_null{ nullptr };
+  auto opt = maybe_null.as_not_null();
+  REQUIRE(!opt.has_value());
+}
+
 TEST_CASE("explicit constructor", "[maybe_null]")
 {
-  SECTION("from nullptr")
-  {
-    mp::maybe_null<int *> const maybe_null{ nullptr };
-    auto opt = maybe_null.as_not_null();
-    REQUIRE(!opt.has_value());
-  }
   SECTION("from typed nullptr")
   {
     int *data = nullptr;
@@ -64,364 +65,254 @@ TEST_CASE("rvalue reference constructor", "[maybe_null]")
   }
 }
 
-#if 0
 TEST_CASE("copy constructor", "[maybe_null]")
 {
-  SECTION("from parent")
+  SECTION("same type")
   {
     gsl::owner<Parent *> owner1{ new Parent() };
+    *owner1->value = 42;
     mp::maybe_null<Parent *> const parent1{ owner1 };
     mp::maybe_null<Parent *> const parent2(parent1);
-    REQUIRE(owner1 == parent1.get());
-    REQUIRE(parent2.get() == parent1.get());
+    auto opt = parent2.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<Parent *> not_null = opt.value();
+    int actual = not_null->get_value();
+    REQUIRE(actual == 42);
     delete owner1;
   }
   SECTION("from child")
   {
-    // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
-    gsl::owner<Child *> owner2(new Child());
-    mp::maybe_null<Child *> const child1(owner2);
-    mp::maybe_null<Parent *> const parent3(child1);
-    REQUIRE(owner2 == child1.get());
-    REQUIRE(parent3.get() == child1.get());
-    delete owner2;
+    gsl::owner<Child *> owner1{ new Child() };
+    *owner1->value = 42;
+    mp::maybe_null<Child *> const parent1{ owner1 };
+    mp::maybe_null<Parent *> const parent2(parent1);
+    auto opt = parent2.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<Parent *> not_null = opt.value();
+    int actual = not_null->get_value();
+    REQUIRE(actual == 42);
+    delete owner1;
   }
-  SECTION("from not null")
+  SECTION("nullptr")
   {
-    int const data = 42;
-    mp::maybe_null_not_null<int const *> src = mp::make_maybe_null_not_null(&data);
-    mp::maybe_null<int const *> dest{ src };
-    bool result = (*dest == data);
-    REQUIRE(result);
+    mp::maybe_null<Child *> const parent1{ nullptr };
+    mp::maybe_null<Parent *> const parent2(parent1);
+    auto opt = parent2.as_not_null();
+    REQUIRE(!opt.has_value());
   }
 }
 
 TEST_CASE("move constructor", "[maybe_null]")
 {
-  SECTION("from parent")
+  SECTION("same type")
   {
-    gsl::owner<Parent *> owner{ new Parent() };
-    mp::maybe_null<Parent *> const parent1{ owner };
-    // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
-    // mp::maybe_null<Parent *> const parent2( std::move(parent1) );
-    // REQUIRE(parent2.get() != nullptr);
-    delete owner;
+    gsl::owner<Parent *> owner1{ new Parent() };
+    *owner1->value = 42;
+    mp::maybe_null<Parent *> const parent1{ owner1 };
+    mp::maybe_null<Parent *> const parent2(std::move(parent1));
+    auto opt = parent2.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<Parent *> not_null = opt.value();
+    int actual = not_null->get_value();
+    REQUIRE(actual == 42);
+    delete owner1;
   }
   SECTION("from child")
   {
-    // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
-    gsl::owner<Child *> owner(new Child());
-    mp::maybe_null<Child *> const child1(owner);
-    // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
-    // mp::maybe_null<Parent *> parent3( std::move(child1) );
-    // REQUIRE(parent3.get() != nullptr);
-    delete owner;
+    gsl::owner<Child *> owner1{ new Child() };
+    *owner1->value = 42;
+    mp::maybe_null<Child *> const parent1{ owner1 };
+    mp::maybe_null<Parent *> const parent2(std::move(parent1));
+    auto opt = parent2.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<Parent *> not_null = opt.value();
+    int actual = not_null->get_value();
+    REQUIRE(actual == 42);
+    delete owner1;
+  }
+  SECTION("nullptr")
+  {
+    mp::maybe_null<Child *> const parent1{ nullptr };
+    mp::maybe_null<Parent *> const parent2(std::move(parent1));
+    auto opt = parent2.as_not_null();
+    REQUIRE(!opt.has_value());
   }
 }
 
 TEST_CASE("assignment", "[maybe_null]")
 {
-  SECTION("from parent")
+  SECTION("same types")
   {
-    gsl::owner<Parent *> owner0{ new Parent() };
-    gsl::owner<Parent *> owner1{ new Parent() };
-    mp::maybe_null<Parent *> parent1(owner0);
-    mp::maybe_null<Parent *> const parent2(owner1);
-    parent1 = parent2;
-    REQUIRE(owner1 == parent1.get());
-    REQUIRE(owner1 == parent2.get());
-    delete owner1;
-    delete owner0;
+    int const data = 4;
+    mp::maybe_null<int const *> const source{ &data };
+    mp::maybe_null<int const *> destination;
+    destination = source;
+    auto opt = destination.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<int const *> const &not_null = opt.value();
+    REQUIRE(data == *not_null);
   }
-  SECTION("from child")
+  SECTION("inherited types")
   {
-    // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
-    gsl::owner<Child *> owner2(new Child());
-    // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
-    gsl::owner<Child *> const owner3(new Child());
-    mp::maybe_null<Child *> child1(owner2);
-    mp::maybe_null<Child *> const child2(owner3);
-    child1 = child2;
-    REQUIRE(child1.get() == owner3);
-    REQUIRE(child2.get() == owner3);
-    delete owner3;
-    delete owner2;
+    int *data = new int{ 4 };
+    Child child(data);
+    mp::maybe_null<Child *> const source{ &child };
+    mp::maybe_null<Parent *> destination;
+    destination = source;
+    auto opt = destination.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<Parent *> const &not_null = opt.value();
+    int const actual = not_null->get_value();
+    REQUIRE(*data == actual);
   }
 }
+
 
 TEST_CASE("move assignment", "[maybe_null]")
 {
-  SECTION("from parent")
+  SECTION("same types")
   {
-    gsl::owner<Parent *> owner0{ new Parent() };
-    gsl::owner<Parent *> owner1{ new Parent() };
-    mp::maybe_null<Parent *> parent1(owner0);
-    mp::maybe_null<Parent *> const parent2(owner1);
-    // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
-    parent1 = std::move(parent2);
-    REQUIRE(owner1 == parent1.get());
-    delete owner1;
-    delete owner0;
+    int const data = 4;
+    mp::maybe_null<int const *> const source{ &data };
+    mp::maybe_null<int const *> destination;
+    destination = std::move(source);
+    auto opt = destination.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<int const *> const &not_null = opt.value();
+    REQUIRE(data == *not_null);
   }
-  SECTION("from child")
+  SECTION("inherited types")
   {
-    // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
-    gsl::owner<Child *> owner2(new Child());
-    // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
-    gsl::owner<Child *> const owner3(new Child());
-    mp::maybe_null<Child *> child1(owner2);
-    mp::maybe_null<Child *> const child2(owner3);
-    // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
-    child1 = std::move(child2);
-    REQUIRE(child1.get() == owner3);
-    delete owner3;
-    delete owner2;
+    int *data = new int{ 4 };
+    Child child(data);
+    mp::maybe_null<Child *> const source{ &child };
+    mp::maybe_null<Parent *> destination;
+    destination = std::move(source);
+    auto opt = destination.as_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<Parent *> const &not_null = opt.value();
+    int const actual = not_null->get_value();
+    REQUIRE(*data == actual);
   }
 }
 
-TEST_CASE("arrow operator", "[maybe_null]")
+TEST_CASE("operator !", "[maybe_null]")
 {
-  gsl::owner<Child *> owner0{ new Child() };
-  mp::maybe_null<Parent *> const maybe_null = mp::make_maybe_null<Parent *>(owner0);
-  REQUIRE(maybe_null->value == owner0->value);
-  delete owner0;
-}
-
-TEST_CASE("dereference operator", "[maybe_null]")
-{
-  gsl::owner<Child *> owner0{ new Child() };
-  mp::maybe_null<Parent *> const maybe_null = mp::make_maybe_null<Parent *>(owner0);
-  REQUIRE((*maybe_null).value == owner0->value);
-  delete owner0;
+  SECTION("nullptr")
+  {
+    mp::maybe_null<int *> ptr;
+    bool actual = !ptr;
+    REQUIRE(actual);
+  }
+  SECTION("not nullptr")
+  {
+    int data = 4;
+    mp::maybe_null<int *> ptr(&data);
+    bool actual = !!ptr;
+    REQUIRE(actual);
+  }
 }
 
 TEST_CASE("make_maybe_null", "[maybe_null]")
 {
-  gsl::owner<Child *> owner0{ new Child() };
-  mp::maybe_null<Parent *> const maybe_null1 = mp::make_maybe_null<Parent *>(owner0);
-  REQUIRE(maybe_null1.get() == owner0);
-  mp::maybe_null<Parent *> const maybe_null2 = mp::make_maybe_null<Parent *>(owner0);
-  REQUIRE(maybe_null2.get() == owner0);
-  delete owner0;
+  int const data = 4;
+  mp::maybe_null<int const *> const maybe_null = mp::make_maybe_null(&data);
+  auto opt = maybe_null.as_not_null();
+  REQUIRE(opt.has_value());
+  int const *actual = opt.value();
+  REQUIRE(data == *actual);
 }
 
-#if !defined(GSL_NO_IOSTREAMS)
 TEST_CASE("stream operator", "[maybe_null]")
 {
-  gsl::owner<Child *> owner0{ new Child() };
-  mp::maybe_null<Parent *> const maybe_null = mp::make_maybe_null<Parent *>(owner0);
+  int const data = 3;
+  mp::maybe_null<int const *> const maybe_null = mp::make_maybe_null(&data);
   std::ostringstream actual_stream;
   actual_stream << maybe_null;
   std::ostringstream expected_stream;
-  expected_stream << maybe_null.get();
+  expected_stream << &data;
   std::string actual = actual_stream.str();
   std::string expected = expected_stream.str();
   REQUIRE(actual == expected);
-  delete owner0;
 }
-#endif
 
-TEST_CASE("comparison operator", "[maybe_null]")
+TEST_CASE("comparison operators void*", "[maybe_null]")
 {
-  gsl::owner<Child *> owner0{ new Child() };
-  mp::maybe_null<Parent *> const maybe_null0 = mp::make_maybe_null<Parent *>(owner0);
-  gsl::owner<Child *> owner1{ new Child() };
-  mp::maybe_null<Child *> const maybe_null1 = mp::make_maybe_null<Child *>(owner1);
-  SECTION("equality")
-  {
-    REQUIRE(maybe_null0 == maybe_null0);
-    REQUIRE_FALSE(maybe_null0 == maybe_null1);
-    REQUIRE_FALSE(maybe_null1 == maybe_null0);
-    REQUIRE_FALSE(maybe_null0 != maybe_null0);
-    REQUIRE(maybe_null1 != maybe_null0);
-    REQUIRE(maybe_null0 != maybe_null1);
-    // NOLINTNEXTLINE (misc-redundant-expression)
-    REQUIRE(maybe_null0 == maybe_null0);
-    REQUIRE_FALSE(maybe_null0 == maybe_null1);
-    REQUIRE_FALSE(maybe_null1 == maybe_null0);
-    // NOLINTNEXTLINE (misc-redundant-expression)
-    REQUIRE_FALSE(maybe_null0 != maybe_null0);
-    REQUIRE(maybe_null1 != maybe_null0);
-    REQUIRE(maybe_null0 != maybe_null1);
-  }
-  SECTION("less than")
-  {
-    bool const b0lt1 = maybe_null0 < maybe_null1;
-    bool const b1lt0 = maybe_null1 < maybe_null0;
-    bool const blt = b0lt1 || b1lt0;
-    REQUIRE(blt);
-    REQUIRE(b0lt1 ^ b1lt0);
-  }
-  SECTION("greater than")
-  {
-    bool const b0gt1 = maybe_null0 > maybe_null1;
-    bool const b1gt0 = maybe_null1 > maybe_null0;
-    bool const bgt = b0gt1 || b1gt0;
-    REQUIRE(bgt);
-    REQUIRE(b0gt1 ^ b1gt0);
-  }
-  SECTION("less than equal")
-  {
-    bool const b0lte1 = maybe_null0 <= maybe_null1;
-    bool const b1lte0 = maybe_null1 <= maybe_null0;
-    bool const blte = b0lte1 || b1lte0;
-    REQUIRE(blte);
-    REQUIRE(b0lte1 ^ b1lte0);
-    REQUIRE(maybe_null0 <= maybe_null0);
-  }
-  SECTION("greater than equal")
-  {
-    bool const b0gte1 = maybe_null0 >= maybe_null1;
-    bool const b1gte0 = maybe_null1 >= maybe_null0;
-    bool const bgte = b0gte1 || b1gte0;
-    REQUIRE(bgte);
-    REQUIRE(b0gte1 ^ b1gte0);
-    REQUIRE(maybe_null0 <= maybe_null0);
-  }
-  SECTION("nullptr")
-  {
-    mp::maybe_null<int *> null_maybe_null{ nullptr };
-    REQUIRE(null_maybe_null == nullptr);
-    REQUIRE_FALSE(maybe_null0 == nullptr);
-    REQUIRE(nullptr == null_maybe_null);
-    REQUIRE_FALSE(nullptr == maybe_null0);
+  std::array<int, 3> data = { 2, 3, 4 };
+  auto not_null1 = mp::make_maybe_null(&(data.at(1)));
 
-    REQUIRE_FALSE(null_maybe_null != nullptr);
-    REQUIRE(maybe_null0 != nullptr);
-    REQUIRE_FALSE(nullptr != null_maybe_null);
-    REQUIRE(nullptr != maybe_null0);
-  }
-  SECTION("0 as nullptr")
+  SECTION("operator ==")
   {
-    mp::maybe_null<int *> null_maybe_null{ nullptr };
-    // TODO REQUIRE(null_maybe_null == 0);
-    // TODO REQUIRE_FALSE(maybe_null0 == 0);
-    // TODO REQUIRE(0 == null_maybe_null);
-    // TODO REQUIRE_FALSE(0 == maybe_null0);
+    REQUIRE(not_null1 == &data.at(1));
+    REQUIRE(&data.at(1) == not_null1);
+    REQUIRE_FALSE(not_null1 == &data.at(2));
+    REQUIRE_FALSE(&data.at(2) == not_null1);
   }
-  delete owner1;
-  delete owner0;
+  SECTION("operator !=")
+  {
+    REQUIRE_FALSE(not_null1 != &data.at(1));
+    REQUIRE_FALSE(&data.at(1) != not_null1);
+    REQUIRE(not_null1 != &data.at(2));
+    REQUIRE(&data.at(2) != not_null1);
+  }
+  SECTION("operator <")
+  {
+    bool zero_lt = (&data.at(0) < not_null1);
+    bool zero_gt = (&data.at(0) > not_null1);
+    bool two_lt = (not_null1 < &data.at(2));
+    bool two_gt = (not_null1 > &data.at(2));
+    REQUIRE((zero_lt || zero_gt));
+    REQUIRE((zero_lt ^ zero_gt));
+    REQUIRE((two_lt || two_gt));
+    REQUIRE(two_lt ^ two_gt);
+    REQUIRE((zero_lt && two_lt));
+    REQUIRE((zero_lt || two_lt));
+  }
 }
 
-TEST_CASE("nullable not_null comparison operator", "[maybe_null]")
+
+TEST_CASE("comparison operators maybe_null", "[maybe_null]")
 {
-  int const a = 21;
-  int const b = 22;
-  auto nullable_a = mp::make_maybe_null<int const *>(&a);
-  auto not_null_a = mp::make_maybe_null_not_null<int const *>(&a);
-  auto not_null_b = mp::make_maybe_null_not_null<int const *>(&b);
-  SECTION("operator==")
+  std::array<int, 3> data = { 2, 3, 4 };
+  auto not_null0 = mp::make_maybe_null(&(data.at(0)));
+  auto not_null1 = mp::make_maybe_null(&(data.at(1)));
+  auto not_null1b = mp::make_maybe_null(&(data.at(1)));
+  auto not_null2 = mp::make_maybe_null(&(data.at(2)));
+
+  SECTION("operator ==")
   {
-    REQUIRE(nullable_a == not_null_a);
-    REQUIRE(not_null_a == nullable_a);
-    REQUIRE(nullable_a <= not_null_a);
-    REQUIRE(not_null_a >= nullable_a);
+    REQUIRE(not_null1 == not_null1b);
+    REQUIRE_FALSE(not_null1 == not_null2);
   }
-  SECTION("operator!=")
+  SECTION("operator !=")
   {
-    REQUIRE(nullable_a != not_null_b);
-    REQUIRE(not_null_b != nullable_a);
+    REQUIRE_FALSE((not_null1 != not_null1b));
+    bool ne = (not_null1 != not_null2);
+    REQUIRE(ne);
   }
-  SECTION("inequality")
+  SECTION("operator <")
   {
-    if (nullable_a < not_null_b) {
-      REQUIRE(nullable_a <= not_null_b);
-      REQUIRE(not_null_b > nullable_a);
-      REQUIRE(not_null_b >= nullable_a);
-    } else {
-      REQUIRE(false);// TODO
-    }
-  }
-}
-
-TEST_CASE("hashing", "[maybe_null]")
-{
-  gsl::owner<Child *> owner0{ new Child() };
-  mp::maybe_null<Parent *> const maybe_null0 = mp::make_maybe_null<Parent *>(owner0);
-  auto expected = std::hash<Child *>{}(owner0);
-  auto actual = std::hash<mp::maybe_null<Parent *>>{}(maybe_null0);
-  REQUIRE(actual == expected);
-  delete owner0;
-}
-
-void not_null_maybe_null(gsl::not_null<mp::maybe_null<int *>> maybe_null)
-{
-  *maybe_null = 43;
-}
-
-TEST_CASE("not_null", "[maybe_null]")
-{
-  std::unique_ptr<int> owner = std::make_unique<int>(42);
-  not_null_maybe_null(mp::make_maybe_null<int *>(owner.get()));
-  REQUIRE(*owner == 43);
-}
-
-void reference(int &maybe_null) { maybe_null = 43; }
-
-TEST_CASE("reference", "[maybe_null]")
-{
-  SECTION("not_null")
-  {
-    std::unique_ptr<int> owner = std::make_unique<int>(42);
-    auto maybe_null = gsl::make_not_null(mp::make_maybe_null<int *>(owner.get()));
-    reference(*maybe_null);
-    REQUIRE(*owner == 43);
-  }
-  SECTION("strict_not_null")
-  {
-    std::unique_ptr<int> owner = std::make_unique<int>(44);
-    auto maybe_null =
-      gsl::make_strict_not_null(mp::make_maybe_null<int *>(owner.get()));
-    reference(*maybe_null);
-    REQUIRE(*owner == 43);
+    bool zero_lt = (not_null0 < not_null1);
+    bool zero_gt = (not_null0 > not_null1);
+    bool two_lt = (not_null1 < not_null2);
+    bool two_gt = (not_null1 > not_null2);
+    REQUIRE((zero_lt || zero_gt));
+    REQUIRE((zero_lt ^ zero_gt));
+    REQUIRE((two_lt || two_gt));
+    REQUIRE(two_lt ^ two_gt);
+    REQUIRE((zero_lt && two_lt));
+    REQUIRE((zero_lt || two_lt));
   }
 }
 
+// TEST_CASE("hashing", "[maybe_null]")
+// {
+//   int data = 3;
+//   auto maybe_null = mp::make_maybe_null(&data);
+//   auto actual = std::hash(maybe_null);
+//   auto execpted = std::hash(&data);
+//   REQUIRE(actual == expected);
+// }
 
-TEST_CASE("bool", "[maybe_null]")
-{
-  SECTION("not_null")
-  {
-    std::unique_ptr<int> owner = std::make_unique<int>(42);
-    mp::maybe_null<int *> maybe_null = mp::make_maybe_null<int *>(owner.get());
-    bool const not_null = maybe_null;
-    REQUIRE(not_null);
-  }
-  SECTION("null")
-  {
-    mp::maybe_null<int *> maybe_null = mp::make_maybe_null<int *>(nullptr);
-    bool const null = maybe_null;
-    REQUIRE_FALSE(null);
-  }
-}
-
-TEST_CASE("void*", "[maybe_null]")
-{
-  SECTION("not_null")
-  {
-    std::unique_ptr<int> owner = std::make_unique<int>(42);
-    mp::maybe_null<int *> maybe_null = mp::make_maybe_null<int *>(owner.get());
-    void *not_null = maybe_null.get();
-    REQUIRE(not_null != nullptr);
-  }
-  SECTION("null")
-  {
-    mp::maybe_null<int *> maybe_null = mp::make_maybe_null<int *>(nullptr);
-    void *null = maybe_null.get();
-    REQUIRE(null == nullptr);
-  }
-}
-
-TEST_CASE("gsl::not_null", "[maybe_null]")
-{
-  std::unique_ptr<int> owner = std::make_unique<int>(42);
-  mp::maybe_null<int *> maybe_null = mp::make_maybe_null<int *>(owner.get());
-  auto var_not_null_maybe_null = gsl::make_not_null(maybe_null);
-  REQUIRE(var_not_null_maybe_null.get() == maybe_null);
-  REQUIRE(var_not_null_maybe_null.get().get() == owner.get());
-
-  REQUIRE(42 == legacy(var_not_null_maybe_null.get().get()));
-}
-#endif
 
 // NOLINTEND (cppcoreguidelines-avoid-magic-numbers)

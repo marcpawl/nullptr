@@ -9,4 +9,4 @@
 	name = Marc Pawlowsky
 	email = marcpawl@gmail.com
 [credential]
-	helper = "!f() { /home/dev/.vscode-server/bin/e54c774e0add60467559eb0d1e229c6452cf8447/node /tmp/vscode-remote-containers-8ca8c182-db53-481f-be4c-0406886a0836.js git-credential-helper $*; }; f"
+	helper = "!f() { /home/dev/.vscode-server/bin/e54c774e0add60467559eb0d1e229c6452cf8447/node /tmp/vscode-remote-containers-ecc6d797-c5ed-494c-8bf7-5a8edc7c8ec6.js git-credential-helper $*; }; f"

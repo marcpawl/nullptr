@@ -19,6 +19,12 @@
 
 #include "marcpawl/pointers/details.hpp"
 
+namespace marcpawl {
+namespace pointers {
+  template<typename T> class maybe_null;
+  template<typename T> class strict_not_null;
+}// namespace pointers
+}// namespace marcpawl
 
 namespace marcpawl {
 namespace pointers {
@@ -45,7 +51,6 @@ namespace pointers {
 namespace marcpawl {
 namespace pointers {
 
-  template<typename T> class maybe_null;
 
   // Based on gsl::strict_not_null
   //
@@ -185,6 +190,7 @@ struct hash<marcpawl::pointers::strict_not_null<T>>
 namespace marcpawl {
 namespace pointers {
 
+
   //
   // maybe_null
   //
@@ -208,14 +214,18 @@ namespace pointers {
 
     constexpr maybe_null() noexcept : ptr_(nullptr) {}
 
+    constexpr maybe_null(std::nullptr_t) noexcept : ptr_(nullptr) {}
+
+
+    /** Construct from a pointer. */
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    constexpr maybe_null(U &u) noexcept(
+    explicit constexpr maybe_null(U &u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
       : ptr_(std::forward<U>(u))
     {}
 
-
+    /** Construct from a pointer. */
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr maybe_null(U &&u) noexcept(
@@ -223,32 +233,34 @@ namespace pointers {
       : ptr_(std::forward<U>(u))
     {}
 
+    /** Copy constructor */
+    constexpr maybe_null(maybe_null<T> const &other) noexcept(
+      std::is_nothrow_move_constructible<T>::value) = default;
+
+    /** Copy constructor */
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr maybe_null(maybe_null<U> const &other) noexcept(
       std::is_nothrow_move_constructible<T>::value)
-      : maybe_null(other.get())
+      : maybe_null(other.ptr_)
     {}
 
-    // maybe_null(maybe_null const &other) = default;
+    /** Move constructor */
+    constexpr maybe_null(maybe_null<T> &&other) noexcept(
+      std::is_nothrow_move_constructible<T>::value) = default;
+
+    /** Move constructor */
+    template<typename U,
+      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    constexpr maybe_null(maybe_null<U> &&other) noexcept(
+      std::is_nothrow_move_constructible<T>::value)
+      : maybe_null(std::move(other.ptr_))
+    {}
+
+    ~maybe_null() = default;
+
     maybe_null &operator=(maybe_null const &other) = default;
-
-  private:
-    constexpr gsl::details::value_or_reference_return_t<T> get() const
-      noexcept(noexcept(
-        gsl::details::value_or_reference_return_t<T>{ std::declval<T &>() }))
-    {
-      return ptr_;
-    }
-
-  public:
-    maybe_null(std::nullptr_t) : ptr_(nullptr) {}
-
-    maybe_null &operator=(std::nullptr_t)
-    {
-      ptr_ = nullptr;
-      return *this;
-    }
+    maybe_null &operator=(maybe_null &&other) = default;
 
     // unwanted operators...pointers only point to single objects!
     maybe_null &operator++() = delete;
@@ -259,7 +271,9 @@ namespace pointers {
     maybe_null &operator-=(std::ptrdiff_t) = delete;
     void operator[](std::ptrdiff_t) const = delete;
 
-    std::optional<strict_not_null<T>> as_not_null() const
+    constexpr bool operator!() const noexcept { return ptr_ == nullptr; }
+
+    constexpr std::optional<strict_not_null<T>> as_not_null() const
     {
       if (ptr_ == nullptr) {
         return std::nullopt;
@@ -271,23 +285,50 @@ namespace pointers {
       }
     }
 
-#if 0
-
-    std::optional<strict_not_null<T>> as_not_null()
+    friend std::ostream &operator<<(std::ostream &os, maybe_null const &obj)
     {
-      if (ptr_ == nullptr) {
-        return std::nullopt;
-      } else {
-        return strict_not_null<T>(ptr_);
-      }
+      os << obj.ptr_;
+      return os;
     }
-#endif
+
+    template<typename U,
+      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    bool operator==(maybe_null<U> const &rhs) const
+    {
+      return (ptr_ == rhs.ptr_);
+    }
+
+    template<typename U,
+      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    auto operator<=>(maybe_null<U> const &rhs) const
+    {
+      return (ptr_ <=> rhs.ptr_);
+    }
+
+    friend bool operator==(maybe_null const &lhs, void const *rhs)
+    {
+      return (lhs.ptr_ == rhs);
+    }
+
+    friend auto operator<=>(maybe_null const &lhs, void const *rhs)
+    {
+      void const *lhs_ptr = lhs.ptr_;
+      return lhs_ptr <=> rhs;
+    }
 
   private:
+    constexpr gsl::details::value_or_reference_return_t<T> get() const
+      noexcept(noexcept(
+        gsl::details::value_or_reference_return_t<T>{ std::declval<T &>() }))
+    {
+      return ptr_;
+    }
+
     T ptr_;
 
     template<typename U> friend class maybe_null;
   };
+
 
   template<class T> auto make_maybe_null(T &&t) noexcept
   {
@@ -296,60 +337,6 @@ namespace pointers {
     };
   }
 
-#if !defined(GSL_NO_IOSTREAMS)
-  template<class T>
-  std::ostream &operator<<(std::ostream &os, const maybe_null<T> &val)
-  {
-    os << val.get();
-    return os;
-  }
-#endif// !defined(GSL_NO_IOSTREAMS)
-
-  template<class T, class U>
-  auto operator==(const maybe_null<T> &lhs, const maybe_null<U> &rhs) noexcept(
-    noexcept(lhs.get() == rhs.get())) -> decltype(lhs.get() == rhs.get())
-  {
-    return lhs.get() == rhs.get();
-  }
-
-  template<class T, class U>
-  auto operator!=(maybe_null<T> const &lhs, maybe_null<U> const &rhs) noexcept(
-    noexcept(lhs.get() != rhs.get())) -> decltype(lhs.get() != rhs.get())
-  {
-    return lhs.get() != rhs.get();
-  }
-
-  template<class T, class U>
-  auto operator<(maybe_null<T> const &lhs, maybe_null<U> const &rhs) noexcept(
-    noexcept(std::less<>{}(lhs.get(), rhs.get())))
-    -> decltype(std::less<>{}(lhs.get(), rhs.get()))
-  {
-    return std::less<>{}(lhs.get(), rhs.get());
-  }
-
-  template<class T, class U>
-  auto operator<=(maybe_null<T> const &lhs, maybe_null<U> const &rhs) noexcept(
-    noexcept(std::less_equal<>{}(lhs.get(), rhs.get())))
-    -> decltype(std::less_equal<>{}(lhs.get(), rhs.get()))
-  {
-    return std::less_equal<>{}(lhs.get(), rhs.get());
-  }
-
-  template<class T, class U>
-  auto operator>(maybe_null<T> const &lhs, maybe_null<U> const &rhs) noexcept(
-    noexcept(std::greater<>{}(lhs.get(), rhs.get())))
-    -> decltype(std::greater<>{}(lhs.get(), rhs.get()))
-  {
-    return std::greater<>{}(lhs.get(), rhs.get());
-  }
-
-  template<class T, class U>
-  auto operator>=(maybe_null<T> const &lhs, maybe_null<U> const &rhs) noexcept(
-    noexcept(std::greater_equal<>{}(lhs.get(), rhs.get())))
-    -> decltype(std::greater_equal<>{}(lhs.get(), rhs.get()))
-  {
-    return std::greater_equal<>{}(lhs.get(), rhs.get());
-  }
 
   // more unwanted operators
   template<class T, class U>
@@ -384,6 +371,7 @@ namespace pointers {
 }// namespace pointers
 }// namespace marcpawl
 
+
 namespace std {
 template<class T>
 struct hash<marcpawl::pointers::maybe_null<T>>
@@ -392,6 +380,8 @@ struct hash<marcpawl::pointers::maybe_null<T>>
 };
 
 }// namespace std
+
+
 namespace marcpawl {
 namespace pointers {
   namespace details {
