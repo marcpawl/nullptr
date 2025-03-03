@@ -85,7 +85,7 @@ namespace pointers {
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    explicit constexpr strict_not_null(privileged const &, U &&u) noexcept(
+    constexpr strict_not_null(privileged const &, U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
       : ptr_(u)
     {}
@@ -96,19 +96,11 @@ namespace pointers {
       : ptr_(other.ptr_)
     {}
 
-#if 0
-    template<typename U,
-      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    constexpr strict_not_null(const strict_not_null<U> &&other)
-      : ptr_(other.ptr_)
-    {}
-#endif
-
     constexpr ~strict_not_null() = default;
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    strict_not_null &operator=(strict_not_null<U> const &other)
+    constexpr strict_not_null &operator=(strict_not_null<U> const &other)
     {
       ptr_ = other.ptr_;
       return *this;
@@ -116,7 +108,7 @@ namespace pointers {
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    strict_not_null &operator=(strict_not_null<U> &&other)
+    constexpr strict_not_null &operator=(strict_not_null<U> &&other)
     {
       ptr_ = std::move(other.ptr_);
       return *this;
@@ -211,7 +203,7 @@ namespace pointers {
 
     constexpr maybe_null() noexcept : ptr_(nullptr) {}
 
-    constexpr maybe_null(std::nullptr_t) noexcept : ptr_(nullptr) {}
+    explicit maybe_null(std::nullptr_t) noexcept : ptr_(nullptr) {}
 
 
     /** Construct from a pointer. */
@@ -225,13 +217,13 @@ namespace pointers {
     /** Construct from a pointer. */
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    constexpr maybe_null(U &&u) noexcept(
+    explicit constexpr maybe_null(U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
       : ptr_(std::forward<U>(u))
     {}
 
     /** Copy constructor */
-    constexpr maybe_null(maybe_null<T> const &other) noexcept(
+    maybe_null(maybe_null<T> const &other) noexcept(
       std::is_nothrow_move_constructible<T>::value) = default;
 
     /** Copy constructor */
@@ -268,9 +260,12 @@ namespace pointers {
     maybe_null &operator-=(std::ptrdiff_t) = delete;
     void operator[](std::ptrdiff_t) const = delete;
 
-    constexpr bool operator!() const noexcept { return ptr_ == nullptr; }
+    [[nodiscard]] constexpr bool operator!() const noexcept
+    {
+      return ptr_ == nullptr;
+    }
 
-    constexpr optional_not_null as_optional_not_null() const
+    [[nodiscarsd]] constexpr optional_not_null as_optional_not_null() const
     {
       if (ptr_ == nullptr) {
         return std::nullopt;
@@ -281,7 +276,7 @@ namespace pointers {
       }
     }
 
-    constexpr variant_not_null as_variant_not_null() const
+    [[nodiscard]] constexpr variant_not_null as_variant_not_null() const
     {
       if (ptr_ == nullptr) {
         return nullptr;
@@ -292,7 +287,7 @@ namespace pointers {
       }
     }
 
-    constexpr void visit(nullptr_handler auto handle_nullptr,
+    [[nodiscard]] constexpr auto visit(nullptr_handler auto handle_nullptr,
       not_null_handler<T> auto handle_not_null) const
       noexcept(noexcept(handle_nullptr(nullptr))
                && noexcept(handle_not_null(
@@ -300,15 +295,16 @@ namespace pointers {
                    nullptr })))
     {
       if (ptr_ == nullptr) {
-        handle_nullptr(nullptr);
+        return handle_nullptr(nullptr);
       } else {
         typename strict_not_null<T>::privileged privileged;
         strict_not_null<T> ptr{ privileged, ptr_ };
-        handle_not_null(std::move(ptr));
+        return handle_not_null(std::move(ptr));
       }
     }
 
-    friend std::ostream &operator<<(std::ostream &os, maybe_null const &obj)
+    friend constexpr std::ostream &operator<<(std::ostream &os,
+      maybe_null const &obj)
     {
       os << obj.ptr_;
       return os;
@@ -316,32 +312,34 @@ namespace pointers {
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    bool operator==(maybe_null<U> const &rhs) const
+    [[nodiscard]] constexpr bool operator==(maybe_null<U> const &rhs) const
     {
       return (ptr_ == rhs.ptr_);
     }
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    auto operator<=>(maybe_null<U> const &rhs) const
+    [[nodiscard]] constexpr auto operator<=>(maybe_null<U> const &rhs) const
     {
       return (ptr_ <=> rhs.ptr_);
     }
 
-    friend bool operator==(maybe_null const &lhs, void const *rhs)
+    [[nodiscard]]
+    friend constexpr bool operator==(maybe_null const &lhs, void const *rhs)
     {
       return (lhs.ptr_ == rhs);
     }
 
-    friend auto operator<=>(maybe_null const &lhs, void const *rhs)
+    [[nodiscard]]
+    friend constexpr auto operator<=>(maybe_null const &lhs, void const *rhs)
     {
       void const *lhs_ptr = lhs.ptr_;
       return lhs_ptr <=> rhs;
     }
 
   private:
-    constexpr gsl::details::value_or_reference_return_t<T> get() const
-      noexcept(noexcept(
+    [[nodiscard]] constexpr gsl::details::value_or_reference_return_t<T>
+      get() const noexcept(noexcept(
         gsl::details::value_or_reference_return_t<T>{ std::declval<T &>() }))
     {
       return ptr_;
@@ -353,7 +351,7 @@ namespace pointers {
   };
 
 
-  template<class T> auto make_maybe_null(T &&t) noexcept
+  template<class T> [[nodiscard]] constexpr auto make_maybe_null(T &&t) noexcept
   {
     return maybe_null<std::remove_cv_t<std::remove_reference_t<T>>>{
       std::forward<T>(t)
