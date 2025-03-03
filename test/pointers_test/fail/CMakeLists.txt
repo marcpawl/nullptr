@@ -42,6 +42,10 @@ test_compile_failure(
         "handle_nullptr:auto = \\(lambda at")
 test_compile_failure(
 	"TestCompilationFailure" 
+	"maybe_null_visit_bad_not_null_handler.cpp"
+        "handle_not_null:auto = \\(lambda at")
+test_compile_failure(
+	"TestCompilationFailure" 
 	borrower_must_be_pointer.cpp 
 	"note: because 'int' does not satisfy 'Pointer'")
 #test_compile_failure("TestCompilationFailure" fail/borrower_not_deletable.cpp "'__is_invocable<marcpawl::pointers::NonDeletable")

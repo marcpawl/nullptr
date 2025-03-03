@@ -330,6 +330,22 @@ TEST_CASE("as_variant_not_null", "[maybe_null]")
   }
 }
 
+TEST_CASE("constraints", "[maybe_null]")
+{
+  SECTION("not_null_handler")
+  {
+    auto handle_data = [](auto &&) {};
+    mp::not_null_handler<int const *> auto func = handle_data;
+
+    int const data = 4;
+    mp::maybe_null<int const *> const source{ &data };
+    auto opt = source.as_optional_not_null();
+    mp::strict_not_null<int const *> const &not_null = opt.value();
+
+    func(not_null);
+  }
+}
+
 TEST_CASE("visit", "[maybe_null]")
 {
   SECTION("from typed nullptr")

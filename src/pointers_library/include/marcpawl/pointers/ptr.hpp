@@ -23,9 +23,12 @@ namespace pointers {
   template<typename T> class maybe_null;
   template<typename T> class strict_not_null;
 
-  template <typename F>
+  template<typename F>
   concept nullptr_handler = std::invocable<F, std::nullptr_t>;
-  
+
+  template<typename F, typename T>
+  concept not_null_handler = std::invocable<F, strict_not_null<T>>;
+
   class nullptr_exception : public std::exception
   {
   public:
@@ -42,12 +45,6 @@ namespace pointers {
   private:
     std::string message_;
   };
-}// namespace pointers
-}// namespace marcpawl
-
-namespace marcpawl {
-namespace pointers {
-
 
   // Based on gsl::strict_not_null
   //
@@ -295,11 +292,8 @@ namespace pointers {
       }
     }
 
-    // TODO noexcept
-    // TODO constexpr
-    // TODO constraints
-
-    constexpr void visit(nullptr_handler auto handle_nullptr, auto handle_not_null) const
+    constexpr void visit(nullptr_handler auto handle_nullptr,
+      not_null_handler<T> auto handle_not_null) const
       noexcept(noexcept(handle_nullptr(nullptr))
                && noexcept(handle_not_null(
                  strict_not_null<T>{ typename strict_not_null<T>::privileged{},
