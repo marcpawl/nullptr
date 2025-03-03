@@ -346,12 +346,54 @@ TEST_CASE("visit", "[maybe_null]")
   {
     int data = 32;
     mp::maybe_null<int *> maybe_null(&data);
-    auto handle_null = [](std::nullptr_t) {};
-    auto handle_data = [](mp::strict_not_null<int *> &&not_null) {
+    auto handle_null = [](std::nullptr_t) noexcept {};
+    auto handle_data = [](mp::strict_not_null<int *> &&not_null) noexcept {
       (*not_null) += 1;
     };
     maybe_null.visit(handle_null, handle_data);
     REQUIRE(data == 33);
+  }
+  SECTION("noexcept nobody")
+  {
+    int *data = nullptr;
+    mp::maybe_null<int *> const maybe_null(data);
+    auto handle_null = [](std::nullptr_t) {};
+    auto handle_data = [](auto &&) {};
+    bool is_noexcept = noexcept(maybe_null.visit(handle_null, handle_data));
+    REQUIRE_FALSE(is_noexcept);
+  }
+  SECTION("noexcept handle null")
+  {
+    int *data = nullptr;
+    mp::maybe_null<int *> const maybe_null(data);
+    auto handle_null = [](std::nullptr_t) noexcept {};
+    REQUIRE(noexcept(handle_null(nullptr)));
+    auto handle_data = [](auto &&) {};
+    bool is_noexcept = noexcept(maybe_null.visit(handle_null, handle_data));
+    REQUIRE_FALSE(is_noexcept);
+  }
+  SECTION("noexcept handle data")
+  {
+    int data = 3;
+    mp::maybe_null<int *> const maybe_null(&data);
+    auto handle_null = [](std::nullptr_t) {};
+    auto handle_data = [](auto &&) noexcept {};
+    auto opt = maybe_null.as_optional_not_null();
+    mp::strict_not_null<int *> not_null = opt.value();
+    REQUIRE(noexcept(handle_data(not_null)));
+    bool is_noexcept = noexcept(maybe_null.visit(handle_null, handle_data));
+    REQUIRE_FALSE(is_noexcept);
+  }
+  SECTION("noexcept both")
+  {
+    int data = 3;
+    mp::maybe_null<int *> const maybe_null(&data);
+    auto handle_null = [](std::nullptr_t) noexcept {};
+    auto handle_data = [](auto &&) noexcept {};
+    auto opt = maybe_null.as_optional_not_null();
+    mp::strict_not_null<int *> not_null = opt.value();
+    bool is_noexcept = noexcept(maybe_null.visit(handle_null, handle_data));
+    REQUIRE(is_noexcept);
   }
 }
 
