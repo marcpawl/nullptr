@@ -34,6 +34,10 @@ endfunction()
 # Run the test
 test_compile_failure(
 	"TestCompilationFailure" 
+         maybe_null_must_be_pointer.cpp
+         "error: static assertion failed due to requirement 'gsl::details::is_comparable_to_nullptr<int, void>::value': T cannot be compared to nullptr." )
+test_compile_failure(
+	"TestCompilationFailure" 
 	borrower_must_be_pointer.cpp 
 	"note: because 'int' does not satisfy 'Pointer'")
 #test_compile_failure("TestCompilationFailure" fail/borrower_not_deletable.cpp "'__is_invocable<marcpawl::pointers::NonDeletable")
