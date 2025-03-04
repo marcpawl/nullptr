@@ -46,7 +46,19 @@ test_compile_failure(
         "handle_not_null:auto = \\(lambda at")
 test_compile_failure(
 	"TestCompilationFailure" 
-	borrower_must_be_pointer.cpp 
+	"maybe_null_deprecated.cpp"
+	"'get' is deprecated")
+test_compile_failure(
+	"TestCompilationFailure" 
+	"maybe_null_deprecated.cpp"
+	"'operator->' is deprecated")
+test_compile_failure(
+	"TestCompilationFailure" 
+        "maybe_null_deprecated.cpp"
+	"'operator\\*' is deprecated")
+test_compile_failure(
+	"TestCompilationFailure" 
+	"borrower_must_be_pointer.cpp"
 	"note: because 'int' does not satisfy 'Pointer'")
 #test_compile_failure("TestCompilationFailure" fail/borrower_not_deletable.cpp "'__is_invocable<marcpawl::pointers::NonDeletable")
 test_compile_failure(

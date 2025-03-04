@@ -265,7 +265,7 @@ namespace pointers {
       return ptr_ == nullptr;
     }
 
-    [[nodiscarsd]] constexpr optional_not_null as_optional_not_null() const
+    [[nodiscard]] constexpr optional_not_null as_optional_not_null() const
     {
       if (ptr_ == nullptr) {
         return std::nullopt;
@@ -337,14 +337,30 @@ namespace pointers {
       return lhs_ptr <=> rhs;
     }
 
-  private:
-    [[nodiscard]] constexpr gsl::details::value_or_reference_return_t<T>
+    [[deprecated]] [[nodiscard]] constexpr gsl::details::
+      value_or_reference_return_t<T>
       get() const noexcept(noexcept(
         gsl::details::value_or_reference_return_t<T>{ std::declval<T &>() }))
     {
       return ptr_;
     }
 
+    [[deprecated]]
+    constexpr decltype(auto) operator->() const noexcept(false)
+    {
+      if (nullptr == ptr_) { throw nullptr_exception(); }
+      return get();
+    }
+
+    [[deprecated]]
+    constexpr decltype(auto) operator*() const
+    {
+      if (nullptr == ptr_) { throw nullptr_exception(); }
+      return *get();
+    }
+
+
+  private:
     T ptr_;
 
     template<typename U> friend class maybe_null;

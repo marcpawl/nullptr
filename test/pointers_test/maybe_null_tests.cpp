@@ -413,6 +413,79 @@ TEST_CASE("visit", "[maybe_null]")
   }
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+TEST_CASE("get", "[maybe_null]")
+{
+  SECTION("nullptr")
+  {
+    int *data = nullptr;
+    mp::maybe_null<int *> sut = mp::make_maybe_null(data);
+    int *actual = sut.get();
+    REQUIRE(actual == nullptr);
+  }
+  SECTION("not nullptr")
+  {
+    int const data = 5;
+    mp::maybe_null<int const *> sut = mp::make_maybe_null(&data);
+    int const *actual = sut.get();
+    REQUIRE(*actual == data);
+  }
+}
+#pragma clang diagnostic pop
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+TEST_CASE("arrow operator", "[maybe_null]")
+{
+  SECTION("nullptr")
+  {
+    Parent *data = nullptr;
+    mp::maybe_null<Parent *> sut = mp::make_maybe_null(data);
+    bool exceptionThrown = false;
+    try {
+      if (sut->value == 0) { abort(); }
+    } catch (mp::nullptr_exception &) {
+      exceptionThrown = true;
+    }
+    REQUIRE(exceptionThrown);
+  }
+  SECTION("not nullptr")
+  {
+    Parent data;
+    mp::maybe_null<Parent *> sut = mp::make_maybe_null(&data);
+    auto actual = sut->value;
+    REQUIRE(data.value == actual);
+  }
+}
+#pragma clang diagnostic pop
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+TEST_CASE("star operator", "[maybe_null]")
+{
+  SECTION("nullptr")
+  {
+    int *data = nullptr;
+    mp::maybe_null<int *> sut = mp::make_maybe_null(data);
+    bool exceptionThrown = false;
+    try {
+      if (*sut) { abort(); }
+    } catch (mp::nullptr_exception &) {
+      exceptionThrown = true;
+    }
+    REQUIRE(exceptionThrown);
+  }
+  SECTION("not nullptr")
+  {
+    int data = 32;
+    mp::maybe_null<int *> sut = mp::make_maybe_null(&data);
+    auto actual = *sut;
+    REQUIRE(data == actual);
+  }
+}
+#pragma clang diagnostic pop
+
 // TEST_CASE("hashing", "[maybe_null]")
 // {
 //   int data = 3;
