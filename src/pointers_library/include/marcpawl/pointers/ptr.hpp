@@ -34,11 +34,8 @@ namespace pointers {
 
 
   }// namespace details
-}// namespace pointers
-}// namespace marcpawl
 
-namespace marcpawl {
-namespace pointers {
+
   template<typename T> class maybe_null;
   template<typename T> class strict_not_null;
 
@@ -180,13 +177,6 @@ namespace pointers {
 #endif// ( defined(__cpp_deduction_guides) && (__cpp_deduction_guides >=
       // 201611L) )
 
-}// namespace pointers
-}// namespace marcpawl
-
-
-namespace marcpawl {
-namespace pointers {
-
 
   //
   // maybe_null
@@ -298,8 +288,9 @@ namespace pointers {
       }
     }
 
-    [[nodiscard]] constexpr auto visit(nullptr_handler auto handle_nullptr,
-      not_null_handler<T> auto handle_not_null) const
+    [[nodiscard]] constexpr auto visit(
+		    nullptr_handler auto handle_nullptr,
+                    not_null_handler<T> auto handle_not_null) const
       noexcept(noexcept(handle_nullptr(nullptr))
                && noexcept(handle_not_null(
                  strict_not_null<T>{ typename strict_not_null<T>::privileged{},
@@ -398,11 +389,6 @@ namespace pointers {
   maybe_null<T> operator+(std::ptrdiff_t, maybe_null<T> const &) = delete;
 
 
-}// namespace pointers
-}// namespace marcpawl
-
-namespace marcpawl {
-namespace pointers {
   namespace details {
 
     enum struct null_policy { nullable, not_null };
