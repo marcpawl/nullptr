@@ -16,7 +16,26 @@
 
 #include <gsl/gsl>
 
-#include "marcpawl/pointers/details.hpp"
+
+
+namespace marcpawl {
+namespace pointers {
+  namespace details {
+
+    template<typename T, typename U>
+    concept EqualityComparable = requires(T a, U b) {
+      { a == b } -> std::convertible_to<bool>;
+    };
+
+    template<typename T, typename U>
+    concept Comparable = requires(T a, U b) {
+      { a < b } -> std::convertible_to<bool>;
+    };
+
+
+  }// namespace details
+}// namespace pointers
+}// namespace marcpawl
 
 namespace marcpawl {
 namespace pointers {
@@ -164,14 +183,6 @@ namespace pointers {
 }// namespace pointers
 }// namespace marcpawl
 
-namespace std {
-template<class T>
-struct hash<marcpawl::pointers::strict_not_null<T>>
-  : gsl::not_null_hash<marcpawl::pointers::strict_not_null<T>>
-{
-};
-
-}// namespace std
 
 namespace marcpawl {
 namespace pointers {
@@ -387,37 +398,8 @@ namespace pointers {
   maybe_null<T> operator+(std::ptrdiff_t, maybe_null<T> const &) = delete;
 
 
-  template<class T,
-    class U = decltype(std::declval<T const &>().get()),
-    bool = std::is_default_constructible<std::hash<U>>::value>
-  struct maybe_null_hash
-  {
-    std::size_t operator()(T const &value) const
-    {
-      return std::hash<U>{}(value.get());
-    }
-  };
-
-  template<class T, class U> struct maybe_null_hash<T, U, false>
-  {
-    maybe_null_hash() = delete;
-    maybe_null_hash(maybe_null_hash const &) = delete;
-    maybe_null_hash &operator=(maybe_null_hash const &) = delete;
-  };
-
 }// namespace pointers
 }// namespace marcpawl
-
-
-namespace std {
-template<class T>
-struct hash<marcpawl::pointers::maybe_null<T>>
-  : marcpawl::pointers::maybe_null_hash<marcpawl::pointers::maybe_null<T>>
-{
-};
-
-}// namespace std
-
 
 namespace marcpawl {
 namespace pointers {
@@ -722,15 +704,11 @@ namespace pointers {
 }// namespace marcpawl
 
 
-template<typename T,
-  marcpawl::pointers::details::null_policy nullable,
-  marcpawl::pointers::details::ownership_policy ownership>
-struct std::hash<marcpawl::pointers::details::pointer<T, nullable, ownership>>
-{
-  std::size_t operator()(
-    marcpawl::pointers::details::pointer<T, nullable, ownership> const &b)
-    const noexcept
-  {
-    return std::hash<T>{}(b.get());
-  }
-};
+
+namespace marcpawl {
+namespace pointers {
+  template<class T, std::enable_if_t<std::is_pointer<T>::value, bool> = true>
+  using nonowner = T;
+
+}// namespace pointers
+}// namespace marcpawl
