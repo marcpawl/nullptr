@@ -325,7 +325,10 @@ TEST_CASE("nullable not_null comparison operator", "[borrower]")
       REQUIRE(not_null_b > nullable_a);
       REQUIRE(not_null_b >= nullable_a);
     } else {
-      REQUIRE(false);// TODO
+      auto nullable_b = mp::make_borrower<int const *>(&b);
+      REQUIRE(nullable_b <= not_null_a);
+      REQUIRE(not_null_a > nullable_b);
+      REQUIRE(not_null_a >= nullable_b);
     }
   }
 }
