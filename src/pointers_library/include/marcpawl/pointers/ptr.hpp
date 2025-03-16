@@ -36,8 +36,18 @@ namespace pointers {
   }// namespace details
 
 
-  template<typename T> class maybe_null;
-  template<typename T> class strict_not_null;
+  template<typename T>
+  concept Pointer = requires(T t) {
+    *t;
+  };
+
+  template<typename T>
+  concept Nullable = requires(T t) {
+    t = nullptr;
+  };
+
+  template<Pointer T> class maybe_null;
+  template<Pointer T> class strict_not_null;
 
   template<typename F>
   concept nullptr_handler = std::invocable<F, std::nullptr_t>;
@@ -82,7 +92,7 @@ namespace pointers {
   //   - make API clear by specifying not_null in parameters where needed
   //   - remove unnecessary asserts
   //
-  template<class T> class strict_not_null
+  template<Pointer T> class strict_not_null
   {
     static_assert(gsl::details::is_comparable_to_nullptr<T>::value,
       "T cannot be compared to nullptr.");
@@ -152,7 +162,7 @@ namespace pointers {
     strict_not_null &operator-=(std::ptrdiff_t) = delete;
     void operator[](std::ptrdiff_t) const = delete;
 
-    template<typename U> friend class maybe_null;
+    template<Pointer U> friend class maybe_null;
   };
 
   // more unwanted operators
@@ -193,7 +203,7 @@ namespace pointers {
   // - ensure construction from null U* fails
   // - allow implicit conversion to U*
   //
-  template<class T> class maybe_null
+  template<Pointer T> class maybe_null
   {
   public:
     static_assert(gsl::details::is_comparable_to_nullptr<T>::value,
@@ -365,7 +375,7 @@ namespace pointers {
   private:
     T ptr_;
 
-    template<typename U> friend class maybe_null;
+    template<Pointer U> friend class maybe_null;
   };
 
 
@@ -394,24 +404,19 @@ namespace pointers {
     enum struct null_policy { nullable, not_null };
     enum struct ownership_policy { borrower, owner };
 
-    template<typename T>
-    concept Pointer = std::is_pointer_v<T>;
 
     template<Pointer T, null_policy nullable, ownership_policy ownership>
     class pointer
     {
     public:
-      static_assert(std::is_pointer<T>::value, "T Must be pointer.");
-
       explicit pointer()
-        requires(null_policy::nullable == nullable)
+        requires(Nullable<T>)
       = default;
 
-      explicit pointer(std::nullptr_t) noexcept : ptr_(nullptr)
-      {
-        static_assert(
-          nullable == null_policy::nullable, "parameter cannot be nullptr");
-      }
+      explicit pointer(std::nullptr_t) noexcept 
+      requires(Nullable<T>)
+      : ptr_(nullptr)
+      {}
 
       explicit pointer(T ptr) noexcept
         requires(nullable == null_policy::nullable)
