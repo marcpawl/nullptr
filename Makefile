@@ -1,7 +1,8 @@
 
 .PHONY: docker
 docker: image
-	docker run -it --rm -v $(PWD):/home/dev/ nullptr:latest
+	docker run  --rm -v $(PWD):/home/dev/ nullptr:latest cmake
+	docker run --name nullptr_latest -it --rm -v $(PWD):/home/dev/ nullptr:latest
 
 .phony: image
 image:
@@ -10,6 +11,8 @@ image:
 
 .PHONY: cmake
 cmake:
+	git submodule init
+	git submodule update
 	cmake -B /home/dev/build -S /home/dev -G Ninja -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 	cmake . --preset unixlike-clang-debug
 	${MAKE} compile
