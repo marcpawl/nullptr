@@ -44,10 +44,12 @@ TEST_CASE("explicit constructor", "[borrower]")
   SECTION("from non-null")
   {
     int data = 32;
-    mp::borrower_not_null<int *> not_null = mp::make_borrower_not_null(&data);
-    mp::borrower<int *> nullable{ not_null };
-    REQUIRE(data == *not_null);
-    REQUIRE(data == *nullable);
+    mp::strict_not_null<int *> not_null{ &data };
+    mp::borrower<mp::strict_not_null<int *>> source =
+      mp::make_borrower(not_null);
+    mp::borrower<int *> destination{ source };
+    REQUIRE(data == *source);
+    REQUIRE(data == *destination);
   }
 }
 
@@ -75,7 +77,9 @@ TEST_CASE("copy constructor", "[borrower]")
   SECTION("from not null")
   {
     int const data = 42;
-    mp::borrower_not_null<int const *> src = mp::make_borrower_not_null(&data);
+    mp::strict_not_null<int const *> not_null = mp::strict_not_null(&data);
+    mp::borrower<mp::strict_not_null<int const *>> src =
+      mp::make_borrower(not_null);
     mp::borrower<int const *> dest{ src };
     bool result = (*dest == data);
     REQUIRE(result);
@@ -297,9 +301,11 @@ TEST_CASE("nullable not_null comparison operator", "[borrower]")
 {
   int const a = 21;
   int const b = 22;
+  mp::strict_not_null<int const *> aa = mp::strict_not_null(&a);
+  mp::strict_not_null<int const *> bb = mp::strict_not_null(&b);
   auto nullable_a = mp::make_borrower<int const *>(&a);
-  auto not_null_a = mp::make_borrower_not_null<int const *>(&a);
-  auto not_null_b = mp::make_borrower_not_null<int const *>(&b);
+  auto not_null_a = mp::make_borrower<mp::strict_not_null<int const *>>(aa);
+  auto not_null_b = mp::make_borrower<mp::strict_not_null<int const *>>(bb);
   SECTION("operator==")
   {
     REQUIRE(nullable_a == not_null_a);
