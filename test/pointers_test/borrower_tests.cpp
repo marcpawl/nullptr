@@ -17,27 +17,27 @@ TEST_CASE("explicit constructor", "[borrower]")
 {
   SECTION("from nullptr")
   {
-    mp::borrower<int *> const borrower{ nullptr };
+    mp::borrower<int *> const borrower = mp::make_borrower<int *>(nullptr);
     REQUIRE(borrower.get() == nullptr);
   }
   SECTION("from owner")
   {
     gsl::owner<int *> owner{ new int(5) };
-    mp::borrower<int *> const borrower{ owner };
+    mp::borrower<int *> const borrower = mp::make_borrower(owner);
     REQUIRE(borrower.get() == owner);
     delete owner;
   }
   SECTION("from child")
   {
     gsl::owner<Child *> owner(new Child());
-    mp::borrower<Parent *> const borrower(owner);
+    mp::borrower<Parent *> const borrower = mp::make_borrower(owner);
     REQUIRE(borrower.get() == owner);
     delete owner;
   }
   SECTION("from unique_ptr")
   {
     std::unique_ptr<int> owner2 = std::make_unique<int>(4);
-    mp::borrower<int *> const borrower2{ owner2.get() };
+    mp::borrower<int *> const borrower2 = mp::make_borrower(owner2.get());
     REQUIRE(borrower2.get() != nullptr);
     REQUIRE(*borrower2.get() == 4);
   }
@@ -56,7 +56,7 @@ TEST_CASE("copy constructor", "[borrower]")
   SECTION("from parent")
   {
     gsl::owner<Parent *> owner1{ new Parent() };
-    mp::borrower<Parent *> const parent1{ owner1 };
+    mp::borrower<Parent *> const parent1 = mp::make_borrower(owner1);
     mp::borrower<Parent *> const parent2(parent1);
     REQUIRE(owner1 == parent1.get());
     REQUIRE(parent2.get() == parent1.get());
@@ -66,7 +66,7 @@ TEST_CASE("copy constructor", "[borrower]")
   {
     // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
     gsl::owner<Child *> owner2(new Child());
-    mp::borrower<Child *> const child1(owner2);
+    mp::borrower<Child *> const child1 = mp::make_borrower(owner2);
     mp::borrower<Parent *> const parent3(child1);
     REQUIRE(owner2 == child1.get());
     REQUIRE(parent3.get() == child1.get());
@@ -87,20 +87,20 @@ TEST_CASE("move constructor", "[borrower]")
   SECTION("from parent")
   {
     gsl::owner<Parent *> owner{ new Parent() };
-    mp::borrower<Parent *> const parent1{ owner };
+    mp::borrower<Parent *> const parent1 = mp::make_borrower(owner);
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
-    // mp::borrower<Parent *> const parent2( std::move(parent1) );
-    // REQUIRE(parent2.get() != nullptr);
+    mp::borrower<Parent *> const parent2(std::move(parent1));
+    REQUIRE(parent2.get() != nullptr);
     delete owner;
   }
   SECTION("from child")
   {
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
     gsl::owner<Child *> owner(new Child());
-    mp::borrower<Child *> const child1(owner);
+    mp::borrower<Child *> const child1 = mp::make_borrower(owner);
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
-    // mp::borrower<Parent *> parent3( std::move(child1) );
-    // REQUIRE(parent3.get() != nullptr);
+    mp::borrower<Parent *> parent3(std::move(child1));
+    REQUIRE(parent3.get() != nullptr);
     delete owner;
   }
 }
@@ -111,8 +111,9 @@ TEST_CASE("assignment", "[borrower]")
   {
     gsl::owner<Parent *> owner0{ new Parent() };
     gsl::owner<Parent *> owner1{ new Parent() };
-    mp::borrower<Parent *> parent1(owner0);
-    mp::borrower<Parent *> const parent2(owner1);
+    mp::borrower<Parent *> parent1 = mp::make_borrower(owner0);
+    mp::borrower<Parent *> const parent2 = mp::make_borrower(owner1);
+    REQUIRE(parent1.get() == owner0);
     parent1 = parent2;
     REQUIRE(owner1 == parent1.get());
     REQUIRE(owner1 == parent2.get());
@@ -125,8 +126,9 @@ TEST_CASE("assignment", "[borrower]")
     gsl::owner<Child *> owner2(new Child());
     // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
     gsl::owner<Child *> const owner3(new Child());
-    mp::borrower<Child *> child1(owner2);
-    mp::borrower<Child *> const child2(owner3);
+    mp::borrower<Child *> child1 = mp::make_borrower(owner2);
+    mp::borrower<Child *> const child2 = mp::make_borrower(owner3);
+    REQUIRE(child1.get() == owner2);
     child1 = child2;
     REQUIRE(child1.get() == owner3);
     REQUIRE(child2.get() == owner3);
@@ -141,8 +143,9 @@ TEST_CASE("move assignment", "[borrower]")
   {
     gsl::owner<Parent *> owner0{ new Parent() };
     gsl::owner<Parent *> owner1{ new Parent() };
-    mp::borrower<Parent *> parent1(owner0);
-    mp::borrower<Parent *> const parent2(owner1);
+    mp::borrower<Parent *> parent1 = mp::make_borrower(owner0);
+    mp::borrower<Parent *> const parent2 = mp::make_borrower(owner1);
+    REQUIRE(parent1.get() == owner0);
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
     parent1 = std::move(parent2);
     REQUIRE(owner1 == parent1.get());
@@ -155,8 +158,9 @@ TEST_CASE("move assignment", "[borrower]")
     gsl::owner<Child *> owner2(new Child());
     // NOLINTNEXTLINE (hicpp-use-auto,modernize-use-auto)
     gsl::owner<Child *> const owner3(new Child());
-    mp::borrower<Child *> child1(owner2);
-    mp::borrower<Child *> const child2(owner3);
+    mp::borrower<Child *> child1 = mp::make_borrower(owner2);
+    mp::borrower<Child *> const child2 = mp::make_borrower(owner3);
+    REQUIRE(child1.get() == owner2);
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
     child1 = std::move(child2);
     REQUIRE(child1.get() == owner3);
@@ -266,7 +270,7 @@ TEST_CASE("comparison operator", "[borrower]")
   }
   SECTION("nullptr")
   {
-    mp::borrower<int *> null_borrower{ nullptr };
+    mp::borrower<int *> null_borrower = mp::make_borrower<int *>(nullptr);
     REQUIRE(null_borrower == nullptr);
     REQUIRE_FALSE(borrower0 == nullptr);
     REQUIRE(nullptr == null_borrower);
@@ -279,7 +283,7 @@ TEST_CASE("comparison operator", "[borrower]")
   }
   SECTION("0 as nullptr")
   {
-    mp::borrower<int *> null_borrower{ nullptr };
+    // mp::borrower<int *> null_borrower = mp::make_borrower<int*>(nullptr );
     // TODO REQUIRE(null_borrower == 0);
     // TODO REQUIRE_FALSE(borrower0 == 0);
     // TODO REQUIRE(0 == null_borrower);

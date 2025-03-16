@@ -67,7 +67,10 @@ test_compile_failure(
 	"no matching constructor")
 test_compile_failure(
 	"TestCompilationFailure" 
-        borrower_not_null_nullptr_constructor.cpp
+     borrower_not_null_nullptr_constructor.cpp
 	"does not satisfy.*'Nullable'")
-
+test_compile_failure(
+		"TestCompilationFailure" 
+		owner_cannot_create_from_borrower.cpp
+		"calling a private constructor")
 

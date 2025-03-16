@@ -17,7 +17,6 @@
 #include <gsl/gsl>
 
 
-
 namespace marcpawl {
 namespace pointers {
   namespace details {
@@ -37,14 +36,15 @@ namespace pointers {
 
 
   template<typename T>
-  concept Pointer = requires(T t) {
-    *t;
+  concept Pointer = requires(T p) {
+    *p;// T must be dereferenceable
+    {
+      p == nullptr
+    } -> std::convertible_to<bool>;// T must be comparable to nullptr
   };
 
   template<typename T>
-  concept Nullable = requires(T t) {
-    t = nullptr;
-  };
+  concept Nullable = requires(T t) { t = nullptr; };
 
   template<Pointer T> class maybe_null;
   template<Pointer T> class strict_not_null;
@@ -298,9 +298,8 @@ namespace pointers {
       }
     }
 
-    [[nodiscard]] constexpr auto visit(
-		    nullptr_handler auto handle_nullptr,
-                    not_null_handler<T> auto handle_not_null) const
+    [[nodiscard]] constexpr auto visit(nullptr_handler auto handle_nullptr,
+      not_null_handler<T> auto handle_not_null) const
       noexcept(noexcept(handle_nullptr(nullptr))
                && noexcept(handle_not_null(
                  strict_not_null<T>{ typename strict_not_null<T>::privileged{},
@@ -399,244 +398,14 @@ namespace pointers {
   maybe_null<T> operator+(std::ptrdiff_t, maybe_null<T> const &) = delete;
 
 
-  namespace details {
+  enum struct null_policy { nullable, not_null };
+  enum struct ownership_policy { borrower, owner };
 
-    enum struct null_policy { nullable, not_null };
-    enum struct ownership_policy { borrower, owner };
+  template<ownership_policy ownership>
+  concept is_not_owner = (ownership != ownership_policy::owner);
 
-
-    template<Pointer T, null_policy nullable, ownership_policy ownership>
-    class pointer
-    {
-    public:
-      explicit pointer()
-        requires(Nullable<T>)
-      = default;
-
-      explicit pointer(std::nullptr_t) noexcept 
-      requires(Nullable<T>)
-      : ptr_(nullptr)
-      {}
-
-      explicit pointer(T ptr) noexcept
-        requires(nullable == null_policy::nullable)
-        : ptr_(ptr)
-      {}
-
-      explicit pointer(T ptr)
-        requires(nullable == null_policy::not_null)
-        : ptr_(ptr)
-      {
-        if (ptr == nullptr) { throw nullptr_exception(); }
-      }
-
-      template<typename U,
-        null_policy rhs_nullable,
-        typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-      explicit pointer(pointer<U, rhs_nullable, ownership> const &ptr) noexcept
-        : ptr_(ptr.get())
-      {
-        // TODO not null will not accept nullable
-        // TODO owner will not accept borrower
-        // TODO borrower will accept owner
-      }
-
-      template<typename U,
-        null_policy rhs_nullable,
-        typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-      explicit pointer(pointer<U, rhs_nullable, ownership> &&other) noexcept
-        : ptr_(other.get())
-      {
-        // TODO nullable accepts non-nullable
-        // TODO borrower accepts owner
-      }
-
-      ~pointer() = default;
-
-      template<typename U,
-        typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-      pointer<T, nullable, ownership> &operator=(
-        pointer<U, nullable, ownership> const &other) noexcept
-      {
-        // TODO non-nullable accepts nullable
-        // TODO borrower accepts owner
-        if (this == other) { return *this; }
-        ptr_ = other.get();
-        return *this;
-      }
-
-      constexpr T get() const noexcept { return ptr_; }
-      constexpr decltype(auto) operator->() const
-      {
-        // TODO assert not nullptr
-        return get();
-      }
-      constexpr decltype(auto) operator*() const
-      {
-        // TODO assert not nullptr
-        return *get();
-      }
-      constexpr operator bool() const { return get() != nullptr; }
-
-      // unwanted operators...pointers only point to single objects!
-      pointer &operator++() = delete;
-      pointer &operator--() = delete;
-      pointer operator++(int) = delete;
-      pointer operator--(int) = delete;
-      pointer &operator+=(std::ptrdiff_t) = delete;
-      pointer &operator-=(std::ptrdiff_t) = delete;
-      void operator[](std::ptrdiff_t) const = delete;
-
-    private:
-      T ptr_ = nullptr;
-    };
-
-
-#if !defined(GSL_NO_IOSTREAMS)
-    template<class T, null_policy nullable, ownership_policy ownership>
-    std::ostream &operator<<(std::ostream &os,
-      pointer<T, nullable, ownership> const &val)
-    {
-      os << val.get();
-      return os;
-    }
-#endif// !defined(GSL_NO_IOSTREAMS)
-
-
-    template<typename T,
-      typename U,
-      null_policy lhs_nullable,
-      ownership_policy lhs_ownership,
-      null_policy rhs_nullable,
-      ownership_policy rhs_ownership>
-      requires(::marcpawl::pointers::details::EqualityComparable<T, U>)
-    auto operator==(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
-      pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
-    {
-      return lhs.get() == rhs.get();
-    }
-
-    // TODO
-    // template <typename T, null_policy nullable>
-    // auto operator==( pointer<T, nullable> const &lhs,  std::nullptr_t)
-    // noexcept
-    // {
-    //   return lhs.get() == nullptr;
-    // }
-
-    template<typename T, null_policy nullable, ownership_policy ownership>
-    auto operator==(pointer<T, nullable, ownership> const &lhs,
-      void const *const rhs) noexcept
-    {
-      return lhs.get() == rhs;
-    }
-
-    template<typename T,
-      typename U,
-      null_policy lhs_nullable,
-      ownership_policy lhs_ownership,
-      null_policy rhs_nullable,
-      ownership_policy rhs_ownership>
-      requires(::marcpawl::pointers::details::EqualityComparable<T, U>)
-    auto operator!=(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
-      pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
-    {
-      return lhs.get() != rhs.get();
-    }
-
-    template<typename T,
-      typename U,
-      null_policy lhs_nullable,
-      ownership_policy lhs_ownership,
-      null_policy rhs_nullable,
-      ownership_policy rhs_ownership>
-      requires(::marcpawl::pointers::details::Comparable<T, U>)
-    auto operator<(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
-      pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
-    {
-      return lhs.get() < rhs.get();
-    }
-
-    template<typename T,
-      typename U,
-      null_policy lhs_nullable,
-      ownership_policy lhs_ownership,
-      null_policy rhs_nullable,
-      ownership_policy rhs_ownership>
-      requires(::marcpawl::pointers::details::Comparable<T, U>
-               && ::marcpawl::pointers::details::EqualityComparable<T, U>)
-    auto operator<=(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
-      pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
-    {
-      return lhs.get() <= rhs.get();
-    }
-
-    template<typename T,
-      typename U,
-      null_policy lhs_nullable,
-      ownership_policy lhs_ownership,
-      null_policy rhs_nullable,
-      ownership_policy rhs_ownership>
-      requires(::marcpawl::pointers::details::Comparable<T, U>)
-    auto operator>(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
-      pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
-    {
-      auto l = lhs.get();
-      auto r = rhs.get();
-      return l > r;
-    }
-
-    template<typename T,
-      typename U,
-      null_policy lhs_nullable,
-      ownership_policy lhs_ownership,
-      null_policy rhs_nullable,
-      ownership_policy rhs_ownership>
-      requires(::marcpawl::pointers::details::Comparable<T, U>
-               && ::marcpawl::pointers::details::EqualityComparable<T, U>)
-    auto operator>=(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
-      pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
-    {
-      return lhs.get() >= rhs.get();
-    }
-
-    // more unwanted operators
-    template<class T,
-      class U,
-      null_policy lhs_nullable,
-      ownership_policy lhs_ownership,
-      null_policy rhs_nullable,
-      ownership_policy rhs_ownership>
-    std::ptrdiff_t operator-(pointer<T, lhs_nullable, lhs_ownership> const &,
-      pointer<U, rhs_nullable, rhs_ownership> const &) = delete;
-
-    template<class T,
-      null_policy lhs_nullable,
-      ownership_policy lhs_ownership,
-      null_policy rhs_nullable,
-      ownership_policy rhs_ownership>
-    pointer<T, lhs_nullable, lhs_ownership> operator-(
-      pointer<T, rhs_nullable, rhs_ownership> const &,
-      std::ptrdiff_t) = delete;
-
-    template<class T,
-      null_policy lhs_nullable,
-      ownership_policy lhs_ownership,
-      null_policy rhs_nullable,
-      ownership_policy rhs_ownership>
-    pointer<T, lhs_nullable, lhs_ownership> operator+(
-      pointer<T, rhs_nullable, rhs_ownership> const &,
-      std::ptrdiff_t) = delete;
-
-    template<class T,
-      null_policy lhs_nullable,
-      ownership_policy lhs_ownership,
-      null_policy rhs_nullable,
-      ownership_policy rhs_ownership>
-    pointer<T, lhs_nullable, lhs_ownership> operator+(std::ptrdiff_t,
-      pointer<T, rhs_nullable, rhs_ownership> const &) = delete;
-
-  }// namespace details
+  template<Pointer T, null_policy nullable, ownership_policy ownership>
+  class pointer;
 
 
   //
@@ -651,49 +420,316 @@ namespace pointers {
   // - allow implicit conversion to U*
   //
   // based on gsl::not_null
-  template<class T>
-  using borrower = marcpawl::pointers::details::pointer<T,
-    marcpawl::pointers::details::null_policy::nullable,
-    marcpawl::pointers::details::ownership_policy::borrower>;
+  template<Pointer T>
+  using borrower = marcpawl::pointers::pointer<T,
+    marcpawl::pointers::null_policy::nullable,
+    marcpawl::pointers::ownership_policy::borrower>;
 
-  template<class T> borrower<T> make_borrower(T ptr) noexcept
+
+  template<Pointer T>
+  using borrower_not_null = marcpawl::pointers::pointer<T,
+    marcpawl::pointers::null_policy::not_null,
+    marcpawl::pointers::ownership_policy::borrower>;
+
+
+  template<Pointer T>
+  using owner = marcpawl::pointers::pointer<T,
+    marcpawl::pointers::null_policy::nullable,
+    marcpawl::pointers::ownership_policy::owner>;
+
+  template<Pointer T>
+  using owner_not_null = marcpawl::pointers::pointer<T,
+    marcpawl::pointers::null_policy::not_null,
+    marcpawl::pointers::ownership_policy::owner>;
+
+  template<Pointer T> inline borrower<T> make_borrower(T ptr);
+  template<Pointer T> inline borrower_not_null<T> make_borrower_not_null(T ptr);
+  template<Pointer T> inline owner<T> make_owner(T ptr);
+  template<Pointer T> inline owner_not_null<T> make_owner_not_null(T ptr);
+
+
+  template<Pointer T, null_policy nullable, ownership_policy ownership>
+  class pointer
+  {
+  public:
+    static ownership_policy policy() { return ownership; }
+
+    explicit pointer()
+      requires(Nullable<T>)
+    = default;
+
+  private:
+    /** Use make_borrower or use make_owner.
+     *
+     * Private to avoid pointer<T, ownership_policy::owner> being created
+     * from pointer<T, ownership_policy::borrower>.
+     */
+    explicit pointer(std::nullptr_t) noexcept
+      requires(Nullable<T>)
+      : ptr_(nullptr)
+    {}
+
+    /** Use make_borrower or use make_owner.
+     *
+     * Private to avoid pointer<T, ownership_policy::owner> being created
+     * from pointer<T, ownership_policy::borrower>.
+     */
+    explicit pointer(T ptr) noexcept
+      requires(nullable == null_policy::nullable)
+      : ptr_(ptr)
+    {}
+
+    /** Use make_borrower or use make_owner.
+     *
+     * Private to avoid pointer<T, ownership_policy::owner> being created
+     * from pointer<T, ownership_policy::borrower>.
+     */
+    explicit pointer(T ptr)
+      requires(nullable == null_policy::not_null)
+      : ptr_(ptr)
+    {
+      if (ptr == nullptr) { throw nullptr_exception(); }
+    }
+
+  public:
+    template<typename U,
+      null_policy rhs_nullable,
+      ownership_policy rhs_ownership,
+      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    pointer(pointer<U, rhs_nullable, rhs_ownership> const &ptr) noexcept
+      requires is_not_owner<ownership>
+      // requires(ownership_policy::borrower == ownership)
+      : ptr_(ptr.get())
+    {
+      // TODO not null will not accept nullable
+    }
+
+    template<typename U,
+      null_policy rhs_nullable,
+      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    pointer(pointer<U, rhs_nullable, ownership> &&other) noexcept
+      : ptr_(other.get())
+    {
+      // TODO nullable accepts non-nullable
+      // TODO borrower accepts owner
+    }
+
+    ~pointer() = default;
+
+    template<typename U,
+      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    pointer<T, nullable, ownership> &operator=(
+      pointer<U, nullable, ownership> const &other) noexcept
+    {
+      // TODO non-nullable accepts nullable
+      // TODO borrower accepts owner
+      if (this == other) { return *this; }
+      ptr_ = other.get();
+      return *this;
+    }
+
+    operator T() const { return ptr_; }
+    constexpr T get() const noexcept { return ptr_; }
+    constexpr decltype(auto) operator->() const
+    {
+      // TODO assert not nullptr
+      return get();
+    }
+    constexpr decltype(auto) operator*() const
+    {
+      // TODO assert not nullptr
+      return *get();
+    }
+    constexpr operator bool() const { return get() != nullptr; }
+
+    // unwanted operators...pointers only point to single objects!
+    pointer &operator++() = delete;
+    pointer &operator--() = delete;
+    pointer operator++(int) = delete;
+    pointer operator--(int) = delete;
+    pointer &operator+=(std::ptrdiff_t) = delete;
+    pointer &operator-=(std::ptrdiff_t) = delete;
+    void operator[](std::ptrdiff_t) const = delete;
+
+  private:
+    T ptr_ = nullptr;
+
+    template<Pointer U> friend inline borrower<U> make_borrower(U ptr);
+    template<Pointer U>
+    friend inline borrower_not_null<U> make_borrower_not_null(U ptr);
+    template<Pointer U> friend inline owner<U> make_owner(U ptr);
+    template<Pointer U>
+    friend inline owner_not_null<U> make_owner_not_null(U ptr);
+  };
+
+
+#if !defined(GSL_NO_IOSTREAMS)
+  template<class T, null_policy nullable, ownership_policy ownership>
+  std::ostream &operator<<(std::ostream &os,
+    pointer<T, nullable, ownership> const &val)
+  {
+    os << val.get();
+    return os;
+  }
+#endif// !defined(GSL_NO_IOSTREAMS)
+
+
+  template<typename T,
+    typename U,
+    null_policy lhs_nullable,
+    ownership_policy lhs_ownership,
+    null_policy rhs_nullable,
+    ownership_policy rhs_ownership>
+    requires(::marcpawl::pointers::details::EqualityComparable<T, U>)
+  auto operator==(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
+    pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
+  {
+    return lhs.get() == rhs.get();
+  }
+
+  // TODO
+  // template <typename T, null_policy nullable>
+  // auto operator==( pointer<T, nullable> const &lhs,  std::nullptr_t)
+  // noexcept
+  // {
+  //   return lhs.get() == nullptr;
+  // }
+
+  template<typename T, null_policy nullable, ownership_policy ownership>
+  auto operator==(pointer<T, nullable, ownership> const &lhs,
+    void const *const rhs) noexcept
+  {
+    return lhs.get() == rhs;
+  }
+
+  template<typename T,
+    typename U,
+    null_policy lhs_nullable,
+    ownership_policy lhs_ownership,
+    null_policy rhs_nullable,
+    ownership_policy rhs_ownership>
+    requires(::marcpawl::pointers::details::EqualityComparable<T, U>)
+  auto operator!=(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
+    pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
+  {
+    return lhs.get() != rhs.get();
+  }
+
+  template<typename T,
+    typename U,
+    null_policy lhs_nullable,
+    ownership_policy lhs_ownership,
+    null_policy rhs_nullable,
+    ownership_policy rhs_ownership>
+    requires(::marcpawl::pointers::details::Comparable<T, U>)
+  auto operator<(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
+    pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
+  {
+    return lhs.get() < rhs.get();
+  }
+
+  template<typename T,
+    typename U,
+    null_policy lhs_nullable,
+    ownership_policy lhs_ownership,
+    null_policy rhs_nullable,
+    ownership_policy rhs_ownership>
+    requires(::marcpawl::pointers::details::Comparable<T, U>
+             && ::marcpawl::pointers::details::EqualityComparable<T, U>)
+  auto operator<=(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
+    pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
+  {
+    return lhs.get() <= rhs.get();
+  }
+
+  template<typename T,
+    typename U,
+    null_policy lhs_nullable,
+    ownership_policy lhs_ownership,
+    null_policy rhs_nullable,
+    ownership_policy rhs_ownership>
+    requires(::marcpawl::pointers::details::Comparable<T, U>)
+  auto operator>(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
+    pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
+  {
+    auto l = lhs.get();
+    auto r = rhs.get();
+    return l > r;
+  }
+
+  template<typename T,
+    typename U,
+    null_policy lhs_nullable,
+    ownership_policy lhs_ownership,
+    null_policy rhs_nullable,
+    ownership_policy rhs_ownership>
+    requires(::marcpawl::pointers::details::Comparable<T, U>
+             && ::marcpawl::pointers::details::EqualityComparable<T, U>)
+  auto operator>=(pointer<T, lhs_nullable, lhs_ownership> const &lhs,
+    pointer<U, rhs_nullable, rhs_ownership> const &rhs) noexcept
+  {
+    return lhs.get() >= rhs.get();
+  }
+
+  // more unwanted operators
+  template<class T,
+    class U,
+    null_policy lhs_nullable,
+    ownership_policy lhs_ownership,
+    null_policy rhs_nullable,
+    ownership_policy rhs_ownership>
+  ::std::ptrdiff_t operator-(pointer<T, lhs_nullable, lhs_ownership> const &,
+    pointer<U, rhs_nullable, rhs_ownership> const &) = delete;
+
+  template<class T,
+    null_policy lhs_nullable,
+    ownership_policy lhs_ownership,
+    null_policy rhs_nullable,
+    ownership_policy rhs_ownership>
+  pointer<T, lhs_nullable, lhs_ownership> operator-(
+    pointer<T, rhs_nullable, rhs_ownership> const &,
+    ::std::ptrdiff_t) = delete;
+
+  template<class T,
+    null_policy lhs_nullable,
+    ownership_policy lhs_ownership,
+    null_policy rhs_nullable,
+    ownership_policy rhs_ownership>
+  pointer<T, lhs_nullable, lhs_ownership> operator+(
+    pointer<T, rhs_nullable, rhs_ownership> const &,
+    ::std::ptrdiff_t) = delete;
+
+  template<class T,
+    null_policy lhs_nullable,
+    ownership_policy lhs_ownership,
+    null_policy rhs_nullable,
+    ownership_policy rhs_ownership>
+  pointer<T, lhs_nullable, lhs_ownership> operator+(std::ptrdiff_t,
+    pointer<T, rhs_nullable, rhs_ownership> const &) = delete;
+
+
+  template<Pointer T> inline borrower<T> make_borrower(T ptr)
   {
     return borrower<T>(ptr);
   }
 
-  template<class T>
-  using borrower_not_null = marcpawl::pointers::details::pointer<T,
-    marcpawl::pointers::details::null_policy::not_null,
-    marcpawl::pointers::details::ownership_policy::borrower>;
-
-  template<class T> borrower_not_null<T> make_borrower_not_null(T ptr) noexcept
+  template<Pointer T> inline borrower_not_null<T> make_borrower_not_null(T ptr)
   {
     return borrower_not_null<T>(ptr);
   }
 
-  template<class T>
-  using owner = marcpawl::pointers::details::pointer<T,
-    marcpawl::pointers::details::null_policy::nullable,
-    marcpawl::pointers::details::ownership_policy::owner>;
-
-  template<class T> owner<T> make_owner(T ptr) noexcept
+  template<Pointer T> inline owner<T> make_owner(T ptr)
   {
     return owner<T>(ptr);
   }
 
-  template<class T>
-  using owner_not_null = marcpawl::pointers::details::pointer<T,
-    marcpawl::pointers::details::null_policy::not_null,
-    marcpawl::pointers::details::ownership_policy::owner>;
-
-  template<class T> owner_not_null<T> make_owner_not_null(T ptr) noexcept
+  template<Pointer T> inline owner_not_null<T> make_owner_not_null(T ptr)
   {
     return owner_not_null<T>(ptr);
   }
 
 }// namespace pointers
 }// namespace marcpawl
-
 
 
 namespace marcpawl {

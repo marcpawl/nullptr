@@ -33,5 +33,10 @@ TEST_CASE("make_owner", "[owner]")
   }
 }
 
+TEST_CASE("policy", "[owner]")
+{
+  mp::owner<Parent *> const owner = mp::make_owner<Parent *>(nullptr);
+  REQUIRE(mp::ownership_policy::owner == owner.policy());
+}
 
 // NOLINTEND (cppcoreguidelines-avoid-magic-numbers)

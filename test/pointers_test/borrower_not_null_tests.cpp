@@ -10,8 +10,8 @@ TEST_CASE("borrower_not_null explicit constructor", "[borrower_not_null]")
   SECTION("from nullptr")
   {
     try {
-      mp::borrower_not_null<int *> const borrower{ static_cast<int *>(
-        nullptr) };
+      mp::borrower_not_null<int *> const borrower =
+        mp::make_borrower_not_null<int *>(nullptr);
       REQUIRE(borrower.get() == nullptr);
       FAIL("Expected exception");
     } catch (mp::nullptr_exception const &e) {
