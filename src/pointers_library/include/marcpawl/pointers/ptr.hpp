@@ -14,12 +14,24 @@
 #include <utility>
 #include <variant>
 
-#include <gsl/gsl>
-
-
 namespace marcpawl {
 namespace pointers {
   namespace details {
+    // Resolves to the more efficient of `const T` or `const T&`, in the context
+    // of returning a const-qualified value of type T.
+    //
+    // Copied from cppfront's implementation of the CppCoreGuidelines F.16
+    // (https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rf-in)
+    //
+    // Copied from
+    // https://github.com/microsoft/GSL/blob/main/include/gsl/pointers
+    // User MIT license
+    template<typename T>
+    using value_or_reference_return_t =
+      std::conditional_t<sizeof(T) < 2 * sizeof(void *)
+                           && std::is_trivially_copy_constructible<T>::value,
+        T const,
+        T const &>;
 
     template<typename T, typename U>
     concept EqualityComparable = requires(T a, U b) {
@@ -94,17 +106,13 @@ namespace pointers {
   //
   template<Pointer T> class strict_not_null
   {
-    static_assert(gsl::details::is_comparable_to_nullptr<T>::value,
-      "T cannot be compared to nullptr.");
-
   private:
     T ptr_;
 
   public:
     strict_not_null() = delete;
 
-    template<Pointer U,
-      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    template<Pointer U>
     constexpr explicit strict_not_null(U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
       : ptr_(u)
@@ -151,9 +159,8 @@ namespace pointers {
     }
 
   private:
-    constexpr gsl::details::value_or_reference_return_t<T> get() const
-      noexcept(noexcept(
-        gsl::details::value_or_reference_return_t<T>{ std::declval<T &>() }))
+    constexpr details::value_or_reference_return_t<T> get() const
+      noexcept(noexcept(details::value_or_reference_return_t<T>{ std::declval<T &>() }))
     {
       return ptr_;
     }
@@ -216,9 +223,6 @@ namespace pointers {
   template<Pointer T> class maybe_null
   {
   public:
-    static_assert(gsl::details::is_comparable_to_nullptr<T>::value,
-      "T cannot be compared to nullptr.");
-
     using optional_not_null = std::optional<strict_not_null<T>>;
     using variant_not_null = std::variant<std::nullptr_t, strict_not_null<T>>;
 
@@ -358,10 +362,9 @@ namespace pointers {
       return lhs_ptr <=> rhs;
     }
 
-    [[deprecated]] [[nodiscard]] constexpr gsl::details::
-      value_or_reference_return_t<T>
-      get() const noexcept(noexcept(
-        gsl::details::value_or_reference_return_t<T>{ std::declval<T &>() }))
+    [[deprecated]] [[nodiscard]] constexpr details::value_or_reference_return_t<T>
+      get() const
+      noexcept(noexcept(details::value_or_reference_return_t<T>{ std::declval<T &>() }))
     {
       return ptr_;
     }

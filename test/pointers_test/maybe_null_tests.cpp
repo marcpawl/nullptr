@@ -1,7 +1,8 @@
 #include "hierarchy.hpp"
 #include "marcpawl/pointers/ptr.hpp"
 #include <catch2/catch_test_macros.hpp>
-// #include <sstream>
+
+#include <gsl/gsl>
 
 namespace mp = marcpawl::pointers;
 

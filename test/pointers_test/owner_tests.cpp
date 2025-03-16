@@ -2,6 +2,8 @@
 #include "marcpawl/pointers/ptr.hpp"
 #include <catch2/catch_test_macros.hpp>
 
+#include <gsl/gsl>
+
 namespace mp = marcpawl::pointers;
 
 // NOLINTBEGIN (cppcoreguidelines-avoid-magic-numbers)
