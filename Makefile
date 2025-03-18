@@ -1,7 +1,7 @@
 
 .PHONY: docker
 docker: image
-	docker run  --rm -v $(PWD):/home/dev/ nullptr:latest cmake
+	-docker run  --rm -v $(PWD):/home/dev/ nullptr:latest make cmake
 	docker run --name nullptr_latest -it --rm -v $(PWD):/home/dev/ nullptr:latest
 
 .phony: image
