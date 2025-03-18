@@ -38,3 +38,5 @@ Thumbs.db
 .bash_history
 .ccache
 .local
+
+.gitconfig
