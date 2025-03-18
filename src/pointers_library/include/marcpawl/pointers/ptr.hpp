@@ -6,7 +6,9 @@
 #include <exception>
 #include <functional>
 #include <iomanip>
+#if !defined(MP_NO_IOSTREAMS)
 #include <iostream>
+#endif
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -46,6 +48,10 @@ namespace pointers {
 
   }// namespace details
 
+  template<typename T>
+  concept not_nullptr =
+    !std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>,
+      std::nullptr_t>;
 
   template<typename T>
   concept Pointer = requires(T p) {
@@ -67,6 +73,11 @@ namespace pointers {
   template<typename F, typename T>
   concept not_null_handler = std::invocable<F, strict_not_null<T>>;
 
+  template<Pointer T> class wrapped_pointer;
+
+
+  // Define a concept that checks if U is not a wrapped_pointer or derived from
+  // it
   class nullptr_exception : public std::exception
   {
   public:
@@ -84,9 +95,236 @@ namespace pointers {
     std::string message_;
   };
 
-  // Based on gsl::strict_not_null
+  ////////////////////////////////////////////////////////////////////////////
+  // wrapped_pointer
   //
+  // Pointer that will reject use as a non-single type.
+  // If the type is not single, use std::span.
+  ////////////////////////////////////////////////////////////////////////////
+
+  struct wrapped_pointer_base
+  {
+    ~wrapped_pointer_base() = default;
+  };
+
+  template<Pointer T> class wrapped_pointer : public wrapped_pointer_base
+  {
+  public:
+    T ptr_;
+
+  public:
+    wrapped_pointer() : ptr_(nullptr) {}
+    wrapped_pointer(T ptr) : ptr_(ptr) {}
+
+    // Use get().  Deleted to avoid conversion to raw pointer,
+    // and then construction into a different wrapped pointer
+    // type, avoiding the type check.
+    // operator T() const  = delete;
+
+    constexpr details::value_or_reference_return_t<T> get() const
+    {
+      return ptr_;
+    }
+
+
+    // Define three-way comparison for wrapped_pointer and wrapped_pointer
+    auto operator<=>(wrapped_pointer const &other) const
+    {
+      return ptr_ <=> other.ptr_;
+    }
+
+
+    // // Define three-way comparison for wrapped_pointer<T> and
+    // wrapped_pointer<U> template <typename U> auto operator<=>(const
+    // wrapped_pointer<U>& rhs) const {
+    //     // Implement comparison logic for wrapped_pointer<T> and
+    //     wrapped_pointer<U> return ptr_ <=> rhs;
+    // }
+
+    // unwanted operators...pointers only point to single objects!
+    wrapped_pointer &operator++() = delete;
+    wrapped_pointer &operator--() = delete;
+    wrapped_pointer operator++(int) = delete;
+    wrapped_pointer operator--(int) = delete;
+    wrapped_pointer &operator+=(std::ptrdiff_t) = delete;
+    wrapped_pointer &operator-=(std::ptrdiff_t) = delete;
+    void operator[](std::ptrdiff_t) const = delete;
+  };
+
+
+  template<typename T> auto operator<(wrapped_pointer<T> const &lhs, void *rhs)
+  {
+    return lhs.get() < rhs;
+  }
+
+  template<typename T> auto operator<=(wrapped_pointer<T> const &lhs, void *rhs)
+  {
+    return lhs.get() <= rhs;
+  }
+
+  template<typename T> auto operator>=(wrapped_pointer<T> const &lhs, void *rhs)
+  {
+    return lhs.get() >= rhs;
+  }
+
+  template<typename T, typename U>
+  auto operator>(wrapped_pointer<T> const &lhs, wrapped_pointer<U> const &rhs)
+  {
+    return lhs.get() > rhs.get();
+  }
+
+  template<typename T> auto operator>(wrapped_pointer<T> const &lhs, void *rhs)
+  {
+    return lhs.get() > rhs;
+  }
+
+  template<typename T, typename U>
+  auto operator<(wrapped_pointer<T> const &lhs, wrapped_pointer<U> const &rhs)
+  {
+    return lhs.get() < rhs.get();
+  }
+
+  template<typename T>
+  auto operator<(void const *const lhs, wrapped_pointer<T> const &rhs)
+  {
+    return lhs < rhs.get();
+  }
+
+  template<typename T, typename U>
+  auto operator<=(wrapped_pointer<T> const &lhs, wrapped_pointer<U> const &rhs)
+  {
+    return lhs.get() <= rhs.get();
+  }
+
+  template<typename T> auto operator<=(void *lhs, wrapped_pointer<T> const &rhs)
+  {
+    return lhs <= rhs.get();
+  }
+
+  template<typename T, typename U>
+  auto operator>=(wrapped_pointer<T> const &lhs, wrapped_pointer<U> const &rhs)
+  {
+    return lhs.get() >= rhs.get();
+  }
+
+  template<typename T> auto operator>=(void *lhs, wrapped_pointer<T> const &rhs)
+  {
+    return lhs >= rhs.get();
+  }
+
+  template<typename T> auto operator>(void *lhs, wrapped_pointer<T> const &rhs)
+  {
+    return lhs > rhs.get();
+  }
+
+  template<typename T>
+  [[nodiscard]] auto operator==(wrapped_pointer<T> const &lhs,
+    void const *const rhs);
+
+  template<typename T>
+  [[nodiscard]] auto operator==(void const *const lhs,
+    wrapped_pointer<T> const &rhs);
+
+  template<typename T, typename U>
+  [[nodiscard]] auto operator==(wrapped_pointer<T> const &lhs,
+    wrapped_pointer<U> const &rhs)
+  {
+    auto const &lhs_value = lhs.get();
+    auto const &rhs_value = rhs.get();
+    return lhs_value == rhs_value;
+  }
+
+  template<typename T>
+  [[nodiscard]] auto operator==(wrapped_pointer<T> const &lhs,
+    void const *const rhs)
+  {
+    return lhs.get() == rhs;
+  }
+
+
+  template<typename T>
+  [[nodiscard]] auto operator==(void const *const lhs,
+    wrapped_pointer<T> const &rhs)
+  {
+    return lhs == rhs.get();
+    ;
+  }
+
+  template<typename T>
+  [[nodiscard]] bool operator!(wrapped_pointer<T> const &ptr) noexcept
+  {
+    return ptr.get() == nullptr;
+  }
+
+  // more unwanted operators
+  template<class T, class U>
+  std::ptrdiff_t operator-(wrapped_pointer<T> const &,
+    wrapped_pointer<U> const &) = delete;
+  template<class T>
+  wrapped_pointer<T> operator-(wrapped_pointer<T> const &,
+    std::ptrdiff_t) = delete;
+  template<class T>
+  wrapped_pointer<T> operator+(wrapped_pointer<T> const &,
+    std::ptrdiff_t) = delete;
+  template<class T>
+  wrapped_pointer<T> operator+(std::ptrdiff_t,
+    wrapped_pointer<T> const &) = delete;
+
+#if !defined(MP_NO_IOSTREAMS)
+  template<class T>
+  std::ostream &operator<<(std::ostream &os, wrapped_pointer<T> const &val)
+  {
+    os << val.get();
+    return os;
+  }
+#endif// !defined(MP_NO_IOSTREAMS)
+
+
+#if 0
+template<typename T,
+typename U>
+requires(::marcpawl::pointers::details::Comparable<T, U>)
+auto operator<(wrapped_pointer<T> const &lhs,  wrapped_pointer<U> const &rhs) noexcept
+{
+return lhs.get() < rhs.get();
+}
+#endif
+
+#ifdef TODO
+  template<typename T, typename U>
+    requires(::marcpawl::pointers::details::Comparable<T, U>
+             && ::marcpawl::pointers::details::EqualityComparable<T, U>)
+  auto operator<=(wrapped_pointer<T> const &lhs,
+    wrapped_pointer<U> const &rhs) noexcept
+  {
+    return lhs.get() <= rhs.get();
+  }
+
+  template<typename T, typename U>
+    requires(::marcpawl::pointers::details::Comparable<T, U>)
+  auto operator>(wrapped_pointer<T> const &lhs,
+    wrapped_pointer<U> const &rhs) noexcept
+  {
+    auto l = lhs.get();
+    auto r = rhs.get();
+    return l > r;
+  }
+
+  template<typename T, typename U>
+    requires(::marcpawl::pointers::details::Comparable<T, U>
+             && ::marcpawl::pointers::details::EqualityComparable<T, U>)
+  auto operator>=(wrapped_pointer<T> const &lhs,
+    wrapped_pointer<U> const &rhs) noexcept
+  {
+    return lhs.get() >= rhs.get();
+  }
+#endif
+
+
+  ////////////////////////////////////////////////////////////////////////////
   // strict_not_null
+  //
+  // Based on gsl::strict_not_null
   //
   // Restricts a pointer or smart pointer to only hold non-null values,
   //
@@ -104,10 +342,9 @@ namespace pointers {
   //   - make API clear by specifying not_null in parameters where needed
   //   - remove unnecessary asserts
   //
-  template<Pointer T> class strict_not_null
+  ////////////////////////////////////////////////////////////////////////////
+  template<Pointer T> class strict_not_null : public wrapped_pointer<T>
   {
-  private:
-    T ptr_;
 
   public:
     strict_not_null() = delete;
@@ -115,9 +352,9 @@ namespace pointers {
     template<Pointer U>
     constexpr explicit strict_not_null(U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
-      : ptr_(u)
+      : wrapped_pointer<T>(u)
     {
-      if (ptr_ == nullptr) { throw nullptr_exception(); }
+      if (this->ptr_ == nullptr) { throw nullptr_exception(); }
     }
 
 
@@ -131,13 +368,13 @@ namespace pointers {
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr strict_not_null(privileged const &, U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
-      : ptr_(u)
+      : wrapped_pointer<T>(u)
     {}
 
 
   public:
     constexpr strict_not_null(strict_not_null<T> const &other)
-      : ptr_(other.ptr_)
+      : wrapped_pointer<T>(other.ptr_)
     {}
 
     constexpr ~strict_not_null() = default;
@@ -146,7 +383,7 @@ namespace pointers {
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr strict_not_null &operator=(strict_not_null<U> const &other)
     {
-      ptr_ = other.ptr_;
+      this->ptr_ = other.ptr_;
       return *this;
     }
 
@@ -154,47 +391,19 @@ namespace pointers {
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr strict_not_null &operator=(strict_not_null<U> &&other)
     {
-      ptr_ = std::move(other.ptr_);
+      this->ptr_ = std::move(other.ptr_);
       return *this;
     }
 
-  private:
-    constexpr details::value_or_reference_return_t<T> get() const
-      noexcept(noexcept(details::value_or_reference_return_t<T>{ std::declval<T &>() }))
-    {
-      return ptr_;
-    }
 
   public:
-    constexpr operator T() const { return get(); }
-    constexpr decltype(auto) operator->() const { return get(); }
-    constexpr decltype(auto) operator*() const { return *get(); }
+    constexpr decltype(auto) operator->() const { return this->get(); }
+    constexpr decltype(auto) operator*() const { return *(this->get()); }
 
-    // unwanted operators...pointers only point to single objects!
-    strict_not_null &operator++() = delete;
-    strict_not_null &operator--() = delete;
-    strict_not_null operator++(int) = delete;
-    strict_not_null operator--(int) = delete;
-    strict_not_null &operator+=(std::ptrdiff_t) = delete;
-    strict_not_null &operator-=(std::ptrdiff_t) = delete;
-    void operator[](std::ptrdiff_t) const = delete;
 
     template<Pointer U> friend class maybe_null;
   };
 
-  // more unwanted operators
-  template<class T, class U>
-  std::ptrdiff_t operator-(strict_not_null<T> const &,
-    strict_not_null<U> const &) = delete;
-  template<class T>
-  strict_not_null<T> operator-(strict_not_null<T> const &,
-    std::ptrdiff_t) = delete;
-  template<class T>
-  strict_not_null<T> operator+(strict_not_null<T> const &,
-    std::ptrdiff_t) = delete;
-  template<class T>
-  strict_not_null<T> operator+(std::ptrdiff_t,
-    strict_not_null<T> const &) = delete;
 
 #if (defined(__cpp_deduction_guides) && (__cpp_deduction_guides >= 201611L))
 
@@ -205,6 +414,7 @@ namespace pointers {
       // 201611L) )
 
 
+  ////////////////////////////////////////////////////////////////////////////
   //
   // maybe_null
   //
@@ -220,15 +430,17 @@ namespace pointers {
   // - ensure construction from null U* fails
   // - allow implicit conversion to U*
   //
-  template<Pointer T> class maybe_null
+  ////////////////////////////////////////////////////////////////////////////
+  template<Pointer T> class maybe_null : public wrapped_pointer<T>
   {
   public:
     using optional_not_null = std::optional<strict_not_null<T>>;
     using variant_not_null = std::variant<std::nullptr_t, strict_not_null<T>>;
 
-    constexpr maybe_null() noexcept : ptr_(nullptr) {}
+    constexpr maybe_null() noexcept : wrapped_pointer<T>(nullptr) {}
 
-    explicit maybe_null(std::nullptr_t) noexcept : ptr_(nullptr) {}
+    explicit maybe_null(std::nullptr_t) noexcept : wrapped_pointer<T>(nullptr)
+    {}
 
 
     /** Construct from a pointer. */
@@ -236,7 +448,7 @@ namespace pointers {
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     explicit constexpr maybe_null(U &u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
-      : ptr_(std::forward<U>(u))
+      : wrapped_pointer<T>(std::forward<U>(u))
     {}
 
     /** Construct from a pointer. */
@@ -244,7 +456,7 @@ namespace pointers {
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     explicit constexpr maybe_null(U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
-      : ptr_(std::forward<U>(u))
+      : wrapped_pointer<T>(std::forward<U>(u))
     {}
 
     /** Copy constructor */
@@ -276,38 +488,24 @@ namespace pointers {
     maybe_null &operator=(maybe_null const &other) = default;
     maybe_null &operator=(maybe_null &&other) = default;
 
-    // unwanted operators...pointers only point to single objects!
-    maybe_null &operator++() = delete;
-    maybe_null &operator--() = delete;
-    maybe_null operator++(int) = delete;
-    maybe_null operator--(int) = delete;
-    maybe_null &operator+=(std::ptrdiff_t) = delete;
-    maybe_null &operator-=(std::ptrdiff_t) = delete;
-    void operator[](std::ptrdiff_t) const = delete;
-
-    [[nodiscard]] constexpr bool operator!() const noexcept
-    {
-      return ptr_ == nullptr;
-    }
-
     [[nodiscard]] constexpr optional_not_null as_optional_not_null() const
     {
-      if (ptr_ == nullptr) {
+      if (this->ptr_ == nullptr) {
         return std::nullopt;
       } else {
         typename strict_not_null<T>::privileged privileged;
-        strict_not_null<T> ptr{ privileged, ptr_ };
+        strict_not_null<T> ptr{ privileged, this->ptr_ };
         return optional_not_null{ ptr };
       }
     }
 
     [[nodiscard]] constexpr variant_not_null as_variant_not_null() const
     {
-      if (ptr_ == nullptr) {
+      if (this->ptr_ == nullptr) {
         return nullptr;
       } else {
         typename strict_not_null<T>::privileged privileged;
-        strict_not_null<T> ptr{ privileged, ptr_ };
+        strict_not_null<T> ptr{ privileged, this->ptr_ };
         return ptr;
       }
     }
@@ -319,11 +517,11 @@ namespace pointers {
                  strict_not_null<T>{ typename strict_not_null<T>::privileged{},
                    nullptr })))
     {
-      if (ptr_ == nullptr) {
+      if (this->ptr_ == nullptr) {
         return handle_nullptr(nullptr);
       } else {
         typename strict_not_null<T>::privileged privileged;
-        strict_not_null<T> ptr{ privileged, ptr_ };
+        strict_not_null<T> ptr{ privileged, this->ptr_ };
         return handle_not_null(std::move(ptr));
       }
     }
@@ -335,57 +533,28 @@ namespace pointers {
       return os;
     }
 
-    template<typename U,
-      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    [[nodiscard]] constexpr bool operator==(maybe_null<U> const &rhs) const
-    {
-      return (ptr_ == rhs.ptr_);
-    }
 
-    template<typename U,
-      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    [[nodiscard]] constexpr auto operator<=>(maybe_null<U> const &rhs) const
+    [[deprecated]] [[nodiscard]] constexpr details::value_or_reference_return_t<
+      T>
+      get() const noexcept(noexcept(
+        details::value_or_reference_return_t<T>{ std::declval<T &>() }))
     {
-      return (ptr_ <=> rhs.ptr_);
-    }
-
-    [[nodiscard]]
-    friend constexpr bool operator==(maybe_null const &lhs, void const *rhs)
-    {
-      return (lhs.ptr_ == rhs);
-    }
-
-    [[nodiscard]]
-    friend constexpr auto operator<=>(maybe_null const &lhs, void const *rhs)
-    {
-      void const *lhs_ptr = lhs.ptr_;
-      return lhs_ptr <=> rhs;
-    }
-
-    [[deprecated]] [[nodiscard]] constexpr details::value_or_reference_return_t<T>
-      get() const
-      noexcept(noexcept(details::value_or_reference_return_t<T>{ std::declval<T &>() }))
-    {
-      return ptr_;
+      return this->ptr_;
     }
 
     [[deprecated]]
     constexpr decltype(auto) operator->() const noexcept(false)
     {
-      if (nullptr == ptr_) { throw nullptr_exception(); }
+      if (nullptr == this->ptr_) { throw nullptr_exception(); }
       return get();
     }
 
     [[deprecated]]
     constexpr decltype(auto) operator*() const
     {
-      if (nullptr == ptr_) { throw nullptr_exception(); }
+      if (nullptr == this->ptr_) { throw nullptr_exception(); }
       return *get();
     }
-
-
-  private:
-    T ptr_;
 
     template<Pointer U> friend class maybe_null;
   };
@@ -399,26 +568,15 @@ namespace pointers {
   }
 
 
-  // more unwanted operators
-  template<class T, class U>
-  std::ptrdiff_t operator-(maybe_null<T> const &,
-    maybe_null<U> const &) = delete;
-  template<class T>
-  maybe_null<T> operator-(maybe_null<T> const &, std::ptrdiff_t) = delete;
-  template<class T>
-  maybe_null<T> operator+(maybe_null<T> const &, std::ptrdiff_t) = delete;
-  template<class T>
-  maybe_null<T> operator+(std::ptrdiff_t, maybe_null<T> const &) = delete;
+#if (defined(__cpp_deduction_guides) && (__cpp_deduction_guides >= 201611L))
 
+  // deduction guides to prevent the ctad-maybe-unsupported warning
+  template<class T> maybe_null(T) -> maybe_null<T>;
 
-  enum struct ownership_policy { borrower, owner };
+#endif// ( defined(__cpp_deduction_guides) && (__cpp_deduction_guides >=
+      // 201611L) )
 
-  template<ownership_policy ownership>
-  concept is_not_owner = (ownership != ownership_policy::owner);
-
-  template<Pointer T, ownership_policy ownership> class pointer;
-
-
+  //////////////////////////////////////////////
   //
   // borrower
   //
@@ -431,236 +589,150 @@ namespace pointers {
   // - allow implicit conversion to U*
   //
   // based on gsl::not_null
-  template<Pointer T>
-  using borrower = marcpawl::pointers::pointer<T,
-    marcpawl::pointers::ownership_policy::borrower>;
+  ////////////////////////////////////////////////////////////////////////////
 
-  template<Pointer T>
-  using owner =
-    marcpawl::pointers::pointer<T, marcpawl::pointers::ownership_policy::owner>;
-
-  template<Pointer T> inline borrower<T> make_borrower(T ptr);
-  template<Pointer T> inline owner<T> make_owner(T ptr);
-
-
-  template<Pointer T, ownership_policy ownership> class pointer
+  template<Pointer T> class borrower : public wrapped_pointer<T>
   {
   public:
-    static ownership_policy policy() { return ownership; }
-
-    explicit pointer()
-      requires(Nullable<T>)
-    = default;
-
-  private:
-    /** Use make_borrower or use make_owner.
-     *
-     * Private to avoid pointer<T, ownership_policy::owner> being created
-     * from pointer<T, ownership_policy::borrower>.
-     */
-    explicit pointer(std::nullptr_t) noexcept
-      requires(Nullable<T>)
-      : ptr_(nullptr)
+    explicit borrower()
+      requires std::is_default_constructible_v<T>
     {}
 
-    /** Use make_borrower or use make_owner.
-     *
-     * Private to avoid pointer<T, ownership_policy::owner> being created
-     * from pointer<T, ownership_policy::borrower>.
-     */
-    explicit pointer(T ptr) : ptr_(ptr) {}
+    explicit borrower(std::nullptr_t) noexcept
+      requires(Nullable<T>)
+      : wrapped_pointer<T>(nullptr)
+    {}
 
-  public:
+    explicit borrower(T ptr) : wrapped_pointer<T>(ptr) {}
+
     template<typename U,
-      ownership_policy rhs_ownership,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    pointer(pointer<U, rhs_ownership> const &ptr) noexcept
-      requires is_not_owner<ownership>
-      : ptr_(ptr.get())
+    borrower(borrower<U> const &other) noexcept
+      : wrapped_pointer<T>(other.get())
     {}
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    pointer(pointer<U, ownership> &&other) noexcept : ptr_(other.get())
+    explicit borrower(borrower<U> &&other) noexcept
+      : wrapped_pointer<T>(other.get())
     {
-      // TODO borrower accepts owner
+      static_assert(
+        std::is_rvalue_reference<decltype(other)>::value, "Must be an rvalue");
+      // Owner cannot move pointer to borrower.
+      // Borrower cannot move pointer to owner.
     }
 
-    ~pointer() = default;
+    ~borrower() = default;
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    pointer<T, ownership> &operator=(
-      pointer<U, ownership> const &other) noexcept
+    borrower<T> &operator=(borrower<U> const &other) noexcept
     {
       // TODO borrower accepts owner
       if (this == other) { return *this; }
-      ptr_ = other.get();
+      this->ptr_ = other.get();
       return *this;
     }
 
-    operator T() const { return ptr_; }
-    constexpr T get() const noexcept { return ptr_; }
-    constexpr decltype(auto) operator->() const
-    {
-      // TODO assert not nullptr
-      return get();
-    }
-    constexpr decltype(auto) operator*() const
-    {
-      // TODO assert not nullptr
-      return *get();
-    }
-    constexpr operator bool() const { return get() != nullptr; }
+    /** No operator to prevent the pointer escaping, and a constructor
+     * called with the pointer.
+     */
+    //    operator T() const = delete;
 
-    // unwanted operators...pointers only point to single objects!
-    pointer &operator++() = delete;
-    pointer &operator--() = delete;
-    pointer operator++(int) = delete;
-    pointer operator--(int) = delete;
-    pointer &operator+=(std::ptrdiff_t) = delete;
-    pointer &operator-=(std::ptrdiff_t) = delete;
-    void operator[](std::ptrdiff_t) const = delete;
+    constexpr decltype(auto) operator->() const { return this->get(); }
+    constexpr decltype(auto) operator*() const { return *(this->get()); }
+#ifdef TODO
+    constexpr operator bool() const { return this->get() != nullptr; }
+#endif
 
-  private:
-    T ptr_ = nullptr;
 
     template<Pointer U> friend inline borrower<U> make_borrower(U ptr);
-    template<Pointer U> friend inline owner<U> make_owner(U ptr);
   };
-
-
-#if !defined(GSL_NO_IOSTREAMS)
-  template<class T, ownership_policy ownership>
-  std::ostream &operator<<(std::ostream &os, pointer<T, ownership> const &val)
-  {
-    os << val.get();
-    return os;
-  }
-#endif// !defined(GSL_NO_IOSTREAMS)
-
-
-  template<typename T,
-    typename U,
-    ownership_policy lhs_ownership,
-    ownership_policy rhs_ownership>
-    requires(::marcpawl::pointers::details::EqualityComparable<T, U>)
-  auto operator==(pointer<T, lhs_ownership> const &lhs,
-    pointer<U, rhs_ownership> const &rhs) noexcept
-  {
-    return lhs.get() == rhs.get();
-  }
-
-  template<typename T, ownership_policy ownership>
-  auto operator==(pointer<T, ownership> const &lhs,
-    void const *const rhs) noexcept
-  {
-    return lhs.get() == rhs;
-  }
-
-  template<typename T,
-    typename U,
-    ownership_policy lhs_ownership,
-    ownership_policy rhs_ownership>
-    requires(::marcpawl::pointers::details::EqualityComparable<T, U>)
-  auto operator!=(pointer<T, lhs_ownership> const &lhs,
-    pointer<U, rhs_ownership> const &rhs) noexcept
-  {
-    return lhs.get() != rhs.get();
-  }
-
-  template<typename T,
-    typename U,
-    ownership_policy lhs_ownership,
-    ownership_policy rhs_ownership>
-    requires(::marcpawl::pointers::details::Comparable<T, U>)
-  auto operator<(pointer<T, lhs_ownership> const &lhs,
-    pointer<U, rhs_ownership> const &rhs) noexcept
-  {
-    return lhs.get() < rhs.get();
-  }
-
-  template<typename T,
-    typename U,
-    ownership_policy lhs_ownership,
-    ownership_policy rhs_ownership>
-    requires(::marcpawl::pointers::details::Comparable<T, U>
-             && ::marcpawl::pointers::details::EqualityComparable<T, U>)
-  auto operator<=(pointer<T, lhs_ownership> const &lhs,
-    pointer<U, rhs_ownership> const &rhs) noexcept
-  {
-    return lhs.get() <= rhs.get();
-  }
-
-  template<typename T,
-    typename U,
-    ownership_policy lhs_ownership,
-    ownership_policy rhs_ownership>
-    requires(::marcpawl::pointers::details::Comparable<T, U>)
-  auto operator>(pointer<T, lhs_ownership> const &lhs,
-    pointer<U, rhs_ownership> const &rhs) noexcept
-  {
-    auto l = lhs.get();
-    auto r = rhs.get();
-    return l > r;
-  }
-
-  template<typename T,
-    typename U,
-    ownership_policy lhs_ownership,
-    ownership_policy rhs_ownership>
-    requires(::marcpawl::pointers::details::Comparable<T, U>
-             && ::marcpawl::pointers::details::EqualityComparable<T, U>)
-  auto operator>=(pointer<T, lhs_ownership> const &lhs,
-    pointer<U, rhs_ownership> const &rhs) noexcept
-  {
-    return lhs.get() >= rhs.get();
-  }
-
-  // more unwanted operators
-  template<class T,
-    class U,
-    ownership_policy lhs_ownership,
-    ownership_policy rhs_ownership>
-  ::std::ptrdiff_t operator-(pointer<T, lhs_ownership> const &,
-    pointer<U, rhs_ownership> const &) = delete;
-
-  template<class T,
-    ownership_policy lhs_ownership,
-    ownership_policy rhs_ownership>
-  pointer<T, lhs_ownership> operator-(pointer<T, rhs_ownership> const &,
-    ::std::ptrdiff_t) = delete;
-
-  template<class T,
-    ownership_policy lhs_ownership,
-    ownership_policy rhs_ownership>
-  pointer<T, lhs_ownership> operator+(pointer<T, rhs_ownership> const &,
-    ::std::ptrdiff_t) = delete;
-
-  template<class T,
-    ownership_policy lhs_ownership,
-    ownership_policy rhs_ownership>
-  pointer<T, lhs_ownership> operator+(std::ptrdiff_t,
-    pointer<T, rhs_ownership> const &) = delete;
-
 
   template<Pointer T> inline borrower<T> make_borrower(T ptr)
   {
     return borrower<T>(ptr);
   }
 
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  // owner
+  //
+  // Indicates that the pointer resource should be removed.
+  // Should be migrated to std::unique_ptr, std::shared_ptr, or
+  // std::weak_ptr.  Provided as a step in transforming a legacy
+  // program.
+  //
+  // Has zero size overhead over T.
+  //
+  // If T is a pointer (i.e. T == U*) then
+  // - allow construction from U*
+  // - allow implicit conversion to U*
+  //
+  // based on gsl::not_null
+  ////////////////////////////////////////////////////////////////////////////
+
+
+  template<Pointer T> class owner : public wrapped_pointer<T>
+  {
+  public:
+    explicit owner()
+      requires std::is_default_constructible_v<T>
+    {
+      ;
+    }
+
+    explicit owner(std::nullptr_t) noexcept
+      requires(Nullable<T>)
+      : wrapped_pointer<T>(nullptr)
+    {}
+
+    explicit owner(T ptr) : wrapped_pointer<T>(ptr) {}
+
+    template<typename U,
+      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    explicit owner(owner<U> &&other) : wrapped_pointer<T>(std::forward(other))
+    {}
+
+    ~owner() = default;
+
+    template<typename U,
+      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    owner<T> &operator=(owner<U> const &other) noexcept
+    {
+      // TODO borrower accepts owner
+      if (this == other) { return *this; }
+      this->ptr_ = other.get();
+      return *this;
+    }
+
+    constexpr decltype(auto) operator->() const { return this->get(); }
+    constexpr decltype(auto) operator*() const { return *this->get(); }
+#ifdef TODO
+    constexpr operator bool() const { return this->get() != nullptr; }
+#endif
+
+    borrower<T> as_borrower() const { return borrower<T>(this->get()); }
+
+    template<Pointer U> friend inline owner<U> make_owner(U ptr);
+  };
+
+
+#if !defined(MP_NO_IOSTREAMS)
+  template<class T>
+  std::ostream &operator<<(std::ostream &os, owner<T> const &val)
+  {
+    os << val.get();
+    return os;
+  }
+#endif// !defined(MP_NO_IOSTREAMS)
+
   template<Pointer T> inline owner<T> make_owner(T ptr)
   {
     return owner<T>(ptr);
   }
 
-
-}// namespace pointers
-}// namespace marcpawl
-
-
-namespace marcpawl {
-namespace pointers {
   template<class T, std::enable_if_t<std::is_pointer<T>::value, bool> = true>
   using nonowner = T;
 

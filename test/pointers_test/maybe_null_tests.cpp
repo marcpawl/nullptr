@@ -220,7 +220,7 @@ TEST_CASE("make_maybe_null", "[maybe_null]")
   mp::maybe_null<int const *> const maybe_null = mp::make_maybe_null(&data);
   auto opt = maybe_null.as_optional_not_null();
   REQUIRE(opt.has_value());
-  int const *actual = opt.value();
+  mp::strict_not_null<int const *> actual = opt.value();
   REQUIRE(data == *actual);
 }
 
@@ -240,28 +240,32 @@ TEST_CASE("stream operator", "[maybe_null]")
 TEST_CASE("comparison operators void*", "[maybe_null]")
 {
   std::array<int, 3> data = { 2, 3, 4 };
-  auto not_null1 = mp::make_maybe_null(&(data.at(1)));
+  int *data0 = &(data.at(0));
+  int *data1 = &(data.at(1));
+  int *data2 = &(data.at(2));
+  mp::maybe_null<int *> const not_null1 = mp::make_maybe_null(data1);
 
   SECTION("operator ==")
   {
-    REQUIRE(not_null1 == &data.at(1));
-    REQUIRE(&data.at(1) == not_null1);
-    REQUIRE_FALSE(not_null1 == &data.at(2));
-    REQUIRE_FALSE(&data.at(2) == not_null1);
+    bool eq = (not_null1 == data1);
+    REQUIRE(eq);
+    REQUIRE((data1 == not_null1));
+    REQUIRE_FALSE((not_null1 == data2));
+    REQUIRE_FALSE((data2 == not_null1));
   }
   SECTION("operator !=")
   {
-    REQUIRE_FALSE(not_null1 != &data.at(1));
-    REQUIRE_FALSE(&data.at(1) != not_null1);
-    REQUIRE(not_null1 != &data.at(2));
-    REQUIRE(&data.at(2) != not_null1);
+    REQUIRE_FALSE((not_null1 != data1));
+    REQUIRE_FALSE((data1 != not_null1));
+    REQUIRE((not_null1 != data2));
+    REQUIRE((data2 != not_null1));
   }
   SECTION("operator <")
   {
-    bool zero_lt = (&data.at(0) < not_null1);
-    bool zero_gt = (&data.at(0) > not_null1);
-    bool two_lt = (not_null1 < &data.at(2));
-    bool two_gt = (not_null1 > &data.at(2));
+    bool zero_lt = (data0 < not_null1);
+    bool zero_gt = (data0 > not_null1);
+    bool two_lt = (not_null1 < data2);
+    bool two_gt = (not_null1 > data2);
     REQUIRE((zero_lt || zero_gt));
     REQUIRE((zero_lt ^ zero_gt));
     REQUIRE((two_lt || two_gt));
@@ -275,15 +279,19 @@ TEST_CASE("comparison operators void*", "[maybe_null]")
 TEST_CASE("comparison operators maybe_null", "[maybe_null]")
 {
   std::array<int, 3> data = { 2, 3, 4 };
-  auto not_null0 = mp::make_maybe_null(&(data.at(0)));
-  auto not_null1 = mp::make_maybe_null(&(data.at(1)));
-  auto not_null1b = mp::make_maybe_null(&(data.at(1)));
-  auto not_null2 = mp::make_maybe_null(&(data.at(2)));
+  int *data0 = &(data.at(0));
+  int *data1 = &(data.at(1));
+  int *data2 = &(data.at(2));
+  mp::maybe_null<int *> not_null0 = mp::make_maybe_null(data0);
+  mp::maybe_null<int *> const not_null1 = mp::make_maybe_null(data1);
+  mp::maybe_null<int *> const not_null1b = mp::make_maybe_null(data1);
+  auto not_null2 = mp::make_maybe_null(data2);
 
   SECTION("operator ==")
   {
-    REQUIRE(not_null1 == not_null1b);
-    REQUIRE_FALSE(not_null1 == not_null2);
+    bool eq = (not_null1 == not_null1b);
+    REQUIRE(eq);
+    REQUIRE_FALSE((not_null1 == not_null2));
   }
   SECTION("operator !=")
   {

@@ -72,5 +72,5 @@ test_compile_failure(
 test_compile_failure(
 		"TestCompilationFailure" 
 		owner_cannot_create_from_borrower.cpp
-		"calling a private constructor")
+		"no matching constructor for initialization of 'mp::owner<int \\*>")
 

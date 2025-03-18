@@ -15,7 +15,7 @@ static void doubled(int *const data)
   (*data) = 2 * (*data);
 }
 
-TEST_CASE("operator T", "[not_null]")
+TEST_CASE("get", "[not_null]")
 {
   int data = 32;
   mp::maybe_null<int *> maybe_null(&data);
@@ -23,8 +23,98 @@ TEST_CASE("operator T", "[not_null]")
   REQUIRE(opt.has_value());
   mp::strict_not_null<int *> const &not_null = opt.value();
   REQUIRE(data == *not_null);
-  doubled(not_null);
+  doubled(not_null.get());
   REQUIRE(64 == *not_null);
+}
+
+TEST_CASE("operator==", "[not_null]")
+{
+  SECTION("strict_not_null")
+  {
+    int data1 = 32;
+    mp::maybe_null<int *> maybe_null1(&data1);
+    auto opt1 = maybe_null1.as_optional_not_null();
+    REQUIRE(opt1.has_value());
+    mp::strict_not_null<int *> const &not_null1 = opt1.value();
+    bool eq = (not_null1 == not_null1);
+    REQUIRE(eq);
+    int data2 = 33;
+    mp::maybe_null<int *> maybe_null2(&data2);
+    auto opt2 = maybe_null2.as_optional_not_null();
+    REQUIRE(opt2.has_value());
+    mp::strict_not_null<int *> const &not_null2 = opt2.value();
+    bool eq2 = (not_null1 == not_null2);
+    REQUIRE_FALSE(eq2);
+  }
+  SECTION("nullptr")
+  {
+    int data = 32;
+    mp::maybe_null<int *> maybe_null(&data);
+    auto opt = maybe_null.as_optional_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<int *> const &not_null = opt.value();
+    bool eq = (not_null == nullptr);
+    REQUIRE_FALSE(eq);
+    bool eqr = (nullptr == not_null);
+    REQUIRE_FALSE(eqr);
+  }
+  SECTION("ptr")
+  {
+    int data = 32;
+    mp::maybe_null<int *> maybe_null(&data);
+    auto opt = maybe_null.as_optional_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<int *> const &not_null = opt.value();
+    mp::not_nullptr auto pdata = &data;
+    bool eq = (not_null == pdata);
+    REQUIRE(eq);
+    bool eqr = (&data == not_null);
+    REQUIRE(eqr);
+  }
+}
+
+TEST_CASE("operator!=", "[not_null]")
+{
+  SECTION("nullptr")
+  {
+    int data = 32;
+    mp::maybe_null<int *> maybe_null(&data);
+    auto opt = maybe_null.as_optional_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<int *> const &not_null = opt.value();
+    bool ne = (not_null != nullptr);
+    REQUIRE(ne);
+    bool ner = (nullptr != not_null);
+    REQUIRE(ner);
+  }
+}
+
+
+TEST_CASE("comparison operators", "[not_null]")
+{
+  SECTION("strict_not_null")
+  {
+    int data1 = 32;
+    mp::maybe_null<int *> maybe_null1(&data1);
+    auto opt1 = maybe_null1.as_optional_not_null();
+    REQUIRE(opt1.has_value());
+    mp::strict_not_null<int *> const &not_null1 = opt1.value();
+    REQUIRE((not_null1 == not_null1));
+    bool le11 = (not_null1 <= not_null1);
+    REQUIRE(le11);
+    bool ge11 = (not_null1 >= not_null1);
+    REQUIRE(ge11);
+    int data2 = 33;
+    mp::maybe_null<int *> maybe_null2(&data2);
+    auto opt2 = maybe_null2.as_optional_not_null();
+    REQUIRE(opt2.has_value());
+    mp::strict_not_null<int *> const &not_null2 = opt2.value();
+    bool eq2 = (not_null1 == not_null2);
+    REQUIRE_FALSE(eq2);
+    bool le12 = (not_null1 < not_null2);
+    bool ge12 = (not_null1 > not_null2);
+    REQUIRE((le12 ^ ge12));
+  }
 }
 
 TEST_CASE("copy constructor", "[not_null]")

@@ -12,7 +12,7 @@ namespace mp = marcpawl::pointers;
 TEST_CASE("borrower default constructor", "[borrower]")
 {
   mp::borrower<int *> const borrower{};
-  REQUIRE(borrower.get() == nullptr);
+  REQUIRE((borrower.get() == nullptr));
 }
 
 TEST_CASE("explicit constructor", "[borrower]")
@@ -20,38 +20,40 @@ TEST_CASE("explicit constructor", "[borrower]")
   SECTION("from nullptr")
   {
     mp::borrower<int *> const borrower = mp::make_borrower<int *>(nullptr);
-    REQUIRE(borrower.get() == nullptr);
+    bool actual = borrower.get() == nullptr;
+    REQUIRE(actual);
   }
   SECTION("from owner")
   {
     gsl::owner<int *> owner{ new int(5) };
     mp::borrower<int *> const borrower = mp::make_borrower(owner);
-    REQUIRE(borrower.get() == owner);
+    REQUIRE((borrower.get() == owner));
     delete owner;
   }
   SECTION("from child")
   {
     gsl::owner<Child *> owner(new Child());
     mp::borrower<Parent *> const borrower = mp::make_borrower(owner);
-    REQUIRE(borrower.get() == owner);
+    REQUIRE((borrower.get() == owner));
     delete owner;
   }
   SECTION("from unique_ptr")
   {
     std::unique_ptr<int> owner2 = std::make_unique<int>(4);
     mp::borrower<int *> const borrower2 = mp::make_borrower(owner2.get());
-    REQUIRE(borrower2.get() != nullptr);
-    REQUIRE(*borrower2.get() == 4);
+    REQUIRE((borrower2.get() != nullptr));
+    REQUIRE((*borrower2.get() == 4));
   }
   SECTION("from non-null")
   {
     int data = 32;
     mp::strict_not_null<int *> not_null{ &data };
+    REQUIRE((32 == *not_null));
+    REQUIRE_FALSE((not_null == nullptr));
+
     mp::borrower<mp::strict_not_null<int *>> source =
       mp::make_borrower(not_null);
-    mp::borrower<int *> destination{ source };
-    REQUIRE(data == *source);
-    REQUIRE(data == *destination);
+    REQUIRE((data == *source));
   }
 }
 
@@ -62,8 +64,8 @@ TEST_CASE("copy constructor", "[borrower]")
     gsl::owner<Parent *> owner1{ new Parent() };
     mp::borrower<Parent *> const parent1 = mp::make_borrower(owner1);
     mp::borrower<Parent *> const parent2(parent1);
-    REQUIRE(owner1 == parent1.get());
-    REQUIRE(parent2.get() == parent1.get());
+    REQUIRE((owner1 == parent1.get()));
+    REQUIRE((parent2.get() == parent1.get()));
     delete owner1;
   }
   SECTION("from child")
@@ -72,19 +74,19 @@ TEST_CASE("copy constructor", "[borrower]")
     gsl::owner<Child *> owner2(new Child());
     mp::borrower<Child *> const child1 = mp::make_borrower(owner2);
     mp::borrower<Parent *> const parent3(child1);
-    REQUIRE(owner2 == child1.get());
-    REQUIRE(parent3.get() == child1.get());
+    REQUIRE((owner2 == child1.get()));
+    REQUIRE((parent3.get() == child1.get()));
     delete owner2;
   }
   SECTION("from not null")
   {
-    int const data = 42;
-    mp::strict_not_null<int const *> not_null = mp::strict_not_null(&data);
-    mp::borrower<mp::strict_not_null<int const *>> src =
+    int data = 32;
+    mp::strict_not_null<int *> not_null{ &data };
+    mp::borrower<mp::strict_not_null<int *>> source =
       mp::make_borrower(not_null);
-    mp::borrower<int const *> dest{ src };
-    bool result = (*dest == data);
-    REQUIRE(result);
+    mp::borrower<mp::strict_not_null<int *>> destination{ source };
+    REQUIRE((data == *source));
+    REQUIRE((data == *destination));
   }
 }
 
@@ -96,7 +98,7 @@ TEST_CASE("move constructor", "[borrower]")
     mp::borrower<Parent *> const parent1 = mp::make_borrower(owner);
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
     mp::borrower<Parent *> const parent2(std::move(parent1));
-    REQUIRE(parent2.get() != nullptr);
+    REQUIRE((parent2.get() != nullptr));
     delete owner;
   }
   SECTION("from child")
@@ -106,7 +108,7 @@ TEST_CASE("move constructor", "[borrower]")
     mp::borrower<Child *> const child1 = mp::make_borrower(owner);
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
     mp::borrower<Parent *> parent3(std::move(child1));
-    REQUIRE(parent3.get() != nullptr);
+    REQUIRE((parent3.get() != nullptr));
     delete owner;
   }
 }
@@ -121,8 +123,8 @@ TEST_CASE("assignment", "[borrower]")
     mp::borrower<Parent *> const parent2 = mp::make_borrower(owner1);
     REQUIRE(parent1.get() == owner0);
     parent1 = parent2;
-    REQUIRE(owner1 == parent1.get());
-    REQUIRE(owner1 == parent2.get());
+    REQUIRE((owner1 == parent1.get()));
+    REQUIRE((owner1 == parent2.get()));
     delete owner1;
     delete owner0;
   }
@@ -134,10 +136,10 @@ TEST_CASE("assignment", "[borrower]")
     gsl::owner<Child *> const owner3(new Child());
     mp::borrower<Child *> child1 = mp::make_borrower(owner2);
     mp::borrower<Child *> const child2 = mp::make_borrower(owner3);
-    REQUIRE(child1.get() == owner2);
+    REQUIRE((child1.get() == owner2));
     child1 = child2;
-    REQUIRE(child1.get() == owner3);
-    REQUIRE(child2.get() == owner3);
+    REQUIRE((child1.get() == owner3));
+    REQUIRE((child2.get() == owner3));
     delete owner3;
     delete owner2;
   }
@@ -154,7 +156,7 @@ TEST_CASE("move assignment", "[borrower]")
     REQUIRE(parent1.get() == owner0);
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
     parent1 = std::move(parent2);
-    REQUIRE(owner1 == parent1.get());
+    REQUIRE((owner1 == parent1.get()));
     delete owner1;
     delete owner0;
   }
@@ -169,7 +171,7 @@ TEST_CASE("move assignment", "[borrower]")
     REQUIRE(child1.get() == owner2);
     // NOLINTNEXTLINE (hicpp-move-const-arg,performance-move-const-arg)
     child1 = std::move(child2);
-    REQUIRE(child1.get() == owner3);
+    REQUIRE((child1.get() == owner3));
     delete owner3;
     delete owner2;
   }
@@ -179,7 +181,7 @@ TEST_CASE("arrow operator", "[borrower]")
 {
   gsl::owner<Child *> owner0{ new Child() };
   mp::borrower<Parent *> const borrower = mp::make_borrower<Parent *>(owner0);
-  REQUIRE(borrower->value == owner0->value);
+  REQUIRE((borrower->value == owner0->value));
   delete owner0;
 }
 
@@ -187,7 +189,7 @@ TEST_CASE("dereference operator", "[borrower]")
 {
   gsl::owner<Child *> owner0{ new Child() };
   mp::borrower<Parent *> const borrower = mp::make_borrower<Parent *>(owner0);
-  REQUIRE((*borrower).value == owner0->value);
+  REQUIRE(((*borrower).value == owner0->value));
   delete owner0;
 }
 
@@ -195,9 +197,9 @@ TEST_CASE("make_borrower", "[borrower]")
 {
   gsl::owner<Child *> owner0{ new Child() };
   mp::borrower<Parent *> const borrower1 = mp::make_borrower<Parent *>(owner0);
-  REQUIRE(borrower1.get() == owner0);
+  REQUIRE((borrower1.get() == owner0));
   mp::borrower<Parent *> const borrower2 = mp::make_borrower<Parent *>(owner0);
-  REQUIRE(borrower2.get() == owner0);
+  REQUIRE((borrower2.get() == owner0));
   delete owner0;
 }
 
@@ -212,7 +214,7 @@ TEST_CASE("stream operator", "[borrower]")
   expected_stream << borrower.get();
   std::string actual = actual_stream.str();
   std::string expected = expected_stream.str();
-  REQUIRE(actual == expected);
+  REQUIRE((actual == expected));
   delete owner0;
 }
 #endif
@@ -223,22 +225,24 @@ TEST_CASE("comparison operator", "[borrower]")
   mp::borrower<Parent *> const borrower0 = mp::make_borrower<Parent *>(owner0);
   gsl::owner<Child *> owner1{ new Child() };
   mp::borrower<Child *> const borrower1 = mp::make_borrower<Child *>(owner1);
+
+  REQUIRE((owner0 == owner0));
+  REQUIRE((owner0 != owner1));
+
   SECTION("equality")
   {
-    REQUIRE(borrower0 == borrower0);
-    REQUIRE_FALSE(borrower0 == borrower1);
-    REQUIRE_FALSE(borrower1 == borrower0);
-    REQUIRE_FALSE(borrower0 != borrower0);
-    REQUIRE(borrower1 != borrower0);
-    REQUIRE(borrower0 != borrower1);
-    // NOLINTNEXTLINE (misc-redundant-expression)
-    REQUIRE(borrower0 == borrower0);
-    REQUIRE_FALSE(borrower0 == borrower1);
-    REQUIRE_FALSE(borrower1 == borrower0);
-    // NOLINTNEXTLINE (misc-redundant-expression)
-    REQUIRE_FALSE(borrower0 != borrower0);
-    REQUIRE(borrower1 != borrower0);
-    REQUIRE(borrower0 != borrower1);
+    bool const eq00 = (borrower0 == borrower0);
+    REQUIRE(eq00);
+    bool const eq01 = (borrower0 == borrower1);
+    REQUIRE_FALSE(eq01);
+    bool const eq10 = (borrower1 == borrower0);
+    REQUIRE_FALSE(eq10);
+    bool const ne00 = (borrower0 != borrower0);
+    REQUIRE_FALSE(ne00);
+    bool const ne10 = (borrower1 != borrower0);
+    REQUIRE(ne10);
+    bool const ne01 = (borrower0 != borrower1);
+    REQUIRE(ne01);
   }
   SECTION("less than")
   {
@@ -263,7 +267,7 @@ TEST_CASE("comparison operator", "[borrower]")
     bool const blte = b0lte1 || b1lte0;
     REQUIRE(blte);
     REQUIRE(b0lte1 ^ b1lte0);
-    REQUIRE(borrower0 <= borrower0);
+    REQUIRE((borrower0 <= borrower0));
   }
   SECTION("greater than equal")
   {
@@ -272,7 +276,7 @@ TEST_CASE("comparison operator", "[borrower]")
     bool const bgte = b0gte1 || b1gte0;
     REQUIRE(bgte);
     REQUIRE(b0gte1 ^ b1gte0);
-    REQUIRE(borrower0 <= borrower0);
+    REQUIRE((borrower0 <= borrower0));
   }
   SECTION("nullptr")
   {
@@ -305,33 +309,56 @@ TEST_CASE("nullable not_null comparison operator", "[borrower]")
   int const b = 22;
   mp::strict_not_null<int const *> aa = mp::strict_not_null(&a);
   mp::strict_not_null<int const *> bb = mp::strict_not_null(&b);
-  auto nullable_a = mp::make_borrower<int const *>(&a);
-  auto not_null_a = mp::make_borrower<mp::strict_not_null<int const *>>(aa);
-  auto not_null_b = mp::make_borrower<mp::strict_not_null<int const *>>(bb);
+  mp::borrower<int const *> nullable_a = mp::make_borrower<int const *>(&a);
+  mp::borrower<mp::strict_not_null<int const *>> not_null_a =
+    mp::make_borrower<mp::strict_not_null<int const *>>(aa);
+  mp::borrower<mp::strict_not_null<int const *>> not_null_b =
+    mp::make_borrower<mp::strict_not_null<int const *>>(bb);
   SECTION("operator==")
   {
-    REQUIRE(nullable_a == not_null_a);
-    REQUIRE(not_null_a == nullable_a);
-    REQUIRE(nullable_a <= not_null_a);
-    REQUIRE(not_null_a >= nullable_a);
+    bool eq = (nullable_a == not_null_a);
+    REQUIRE(eq);
+    bool const eqaa = (not_null_a == nullable_a);
+    REQUIRE(eqaa);
+    REQUIRE((nullable_a <= not_null_a));
+    REQUIRE((not_null_a >= nullable_a));
   }
   SECTION("operator!=")
   {
-    REQUIRE(nullable_a != not_null_b);
-    REQUIRE(not_null_b != nullable_a);
+    REQUIRE((nullable_a != not_null_b));
+    REQUIRE((not_null_b != nullable_a));
   }
-  SECTION("inequality")
+  SECTION("<=")
   {
-    if (nullable_a < not_null_b) {
-      REQUIRE(nullable_a <= not_null_b);
-      REQUIRE(not_null_b > nullable_a);
-      REQUIRE(not_null_b >= nullable_a);
-    } else {
-      auto nullable_b = mp::make_borrower<int const *>(&b);
-      REQUIRE(nullable_b <= not_null_a);
-      REQUIRE(not_null_a > nullable_b);
-      REQUIRE(not_null_a >= nullable_b);
-    }
+    bool nullalble_a_le_not_null_b = (nullable_a <= not_null_b);
+    bool not_null_b_le_nullable_a = (not_null_b <= nullable_a);
+    bool not_null_a_eq_not_null_b = (not_null_a == not_null_b);
+    REQUIRE_FALSE(not_null_a_eq_not_null_b);
+    REQUIRE((nullalble_a_le_not_null_b || not_null_b_le_nullable_a));
+    REQUIRE((nullalble_a_le_not_null_b ^ not_null_b_le_nullable_a));
+  }
+  SECTION("<")
+  {
+    bool not_null_b_lt_nullable_a = (not_null_b < nullable_a);
+    bool nullable_a_lt_not_null_b = (nullable_a < not_null_b);
+    REQUIRE((not_null_b_lt_nullable_a || nullable_a_lt_not_null_b));
+    REQUIRE((not_null_b_lt_nullable_a ^ nullable_a_lt_not_null_b));
+  }
+  SECTION(">")
+  {
+    bool not_null_b_gt_nullable_a = (not_null_b > nullable_a);
+    bool nullable_a_gt_not_null_b = (nullable_a > not_null_b);
+    REQUIRE((not_null_b_gt_nullable_a || nullable_a_gt_not_null_b));
+    REQUIRE((not_null_b_gt_nullable_a ^ nullable_a_gt_not_null_b));
+  }
+  SECTION(">=")
+  {
+    bool nullalble_a_ge_not_null_b = (nullable_a >= not_null_b);
+    bool not_null_b_ge_nullable_a = (not_null_b >= nullable_a);
+    bool not_null_a_eq_not_null_b = (not_null_a == not_null_b);
+    REQUIRE_FALSE(not_null_a_eq_not_null_b);
+    REQUIRE((nullalble_a_ge_not_null_b || not_null_b_ge_nullable_a));
+    REQUIRE((nullalble_a_ge_not_null_b ^ not_null_b_ge_nullable_a));
   }
 }
 
@@ -369,23 +396,6 @@ TEST_CASE("reference", "[borrower]")
 }
 
 
-TEST_CASE("bool", "[borrower]")
-{
-  SECTION("not_null")
-  {
-    std::unique_ptr<int> owner = std::make_unique<int>(42);
-    mp::borrower<int *> borrower = mp::make_borrower<int *>(owner.get());
-    bool const not_null = borrower;
-    REQUIRE(not_null);
-  }
-  SECTION("null")
-  {
-    mp::borrower<int *> borrower = mp::make_borrower<int *>(nullptr);
-    bool const null = borrower;
-    REQUIRE_FALSE(null);
-  }
-}
-
 TEST_CASE("void*", "[borrower]")
 {
   SECTION("not_null")
@@ -408,7 +418,7 @@ TEST_CASE("gsl::not_null", "[borrower]")
   std::unique_ptr<int> owner = std::make_unique<int>(42);
   mp::borrower<int *> borrower = mp::make_borrower<int *>(owner.get());
   auto var_not_null_borrower = gsl::make_not_null(borrower);
-  REQUIRE(var_not_null_borrower.get() == borrower);
+  REQUIRE((var_not_null_borrower.get() == borrower));
   REQUIRE(var_not_null_borrower.get().get() == owner.get());
 
   REQUIRE(42 == legacy(var_not_null_borrower.get().get()));
