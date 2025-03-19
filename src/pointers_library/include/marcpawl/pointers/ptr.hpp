@@ -64,6 +64,12 @@ namespace pointers {
   template<typename T>
   concept Nullable = requires(T t) { t = nullptr; };
 
+  template<typename T>
+  concept VoidComparable = requires(T t, void* p) 
+  {
+	  t == p;
+  };
+
   template<Pointer T> class maybe_null;
   template<Pointer T> class strict_not_null;
 
@@ -114,7 +120,13 @@ namespace pointers {
 
   public:
     wrapped_pointer() : ptr_(nullptr) {}
-    wrapped_pointer(T ptr) : ptr_(ptr) {}
+    wrapped_pointer(T const& ptr) 
+	    requires std::is_copy_constructible_v<T>
+	    : ptr_(ptr) {}
+
+    wrapped_pointer(T&& ptr) 
+	    requires std::is_move_constructible_v<T>
+	    : ptr_(std::move(ptr)) {}
 
     // Use get().  Deleted to avoid conversion to raw pointer,
     // and then construction into a different wrapped pointer
@@ -218,10 +230,12 @@ namespace pointers {
   }
 
   template<typename T>
+	  requires VoidComparable<T>
   [[nodiscard]] auto operator==(wrapped_pointer<T> const &lhs,
     void const *const rhs);
 
   template<typename T>
+	  requires VoidComparable<T>
   [[nodiscard]] auto operator==(void const *const lhs,
     wrapped_pointer<T> const &rhs);
 
@@ -235,6 +249,7 @@ namespace pointers {
   }
 
   template<typename T>
+	  requires VoidComparable<T>
   [[nodiscard]] auto operator==(wrapped_pointer<T> const &lhs,
     void const *const rhs)
   {
@@ -243,6 +258,7 @@ namespace pointers {
 
 
   template<typename T>
+	  requires VoidComparable<T>
   [[nodiscard]] auto operator==(void const *const lhs,
     wrapped_pointer<T> const &rhs)
   {
@@ -368,13 +384,19 @@ return lhs.get() < rhs.get();
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr strict_not_null(privileged const &, U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
-      : wrapped_pointer<T>(u)
+      : wrapped_pointer<T>(std::move(u))
     {}
 
 
   public:
     constexpr strict_not_null(strict_not_null<T> const &other)
+	    requires std::is_copy_constructible_v<T>
       : wrapped_pointer<T>(other.ptr_)
+    {}
+
+    constexpr strict_not_null(strict_not_null<T> &&other)
+	    requires std::is_move_constructible_v<T>
+      : wrapped_pointer<T>(std::move(other.ptr_))
     {}
 
     constexpr ~strict_not_null() = default;
@@ -446,17 +468,15 @@ return lhs.get() < rhs.get();
     /** Construct from a pointer. */
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    explicit constexpr maybe_null(U &u) noexcept(
-      std::is_nothrow_move_constructible<T>::value)
-      : wrapped_pointer<T>(std::forward<U>(u))
+    explicit constexpr maybe_null(U const &u) 
+      requires std::is_copy_constructible_v<T>
+      : wrapped_pointer<T>(u)
     {}
 
     /** Construct from a pointer. */
-    template<typename U,
-      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    explicit constexpr maybe_null(U &&u) noexcept(
-      std::is_nothrow_move_constructible<T>::value)
-      : wrapped_pointer<T>(std::forward<U>(u))
+    explicit constexpr maybe_null(T &&t) 
+    requires std::is_move_constructible_v<T>
+      : wrapped_pointer<T>(std::move(t))
     {}
 
     /** Copy constructor */
@@ -488,7 +508,7 @@ return lhs.get() < rhs.get();
     maybe_null &operator=(maybe_null const &other) = default;
     maybe_null &operator=(maybe_null &&other) = default;
 
-    [[nodiscard]] constexpr optional_not_null as_optional_not_null() const
+    [[nodiscard]] constexpr optional_not_null as_optional_not_null() const&
     {
       if (this->ptr_ == nullptr) {
         return std::nullopt;
@@ -496,6 +516,17 @@ return lhs.get() < rhs.get();
         typename strict_not_null<T>::privileged privileged;
         strict_not_null<T> ptr{ privileged, this->ptr_ };
         return optional_not_null{ ptr };
+      }
+    }
+
+    [[nodiscard]] constexpr optional_not_null as_optional_not_null() &&
+    {
+      if (this->ptr_ == nullptr) {
+        return std::nullopt;
+      } else {
+        typename strict_not_null<T>::privileged privileged;
+        strict_not_null<T> ptr{ privileged, std::move(this->ptr_) };
+        return optional_not_null{ std::move(ptr) };
       }
     }
 

@@ -60,7 +60,6 @@ test_compile_failure(
 	"TestCompilationFailure" 
 	"borrower_must_be_pointer.cpp"
 	"note: because 'int' does not satisfy 'Pointer'")
-#test_compile_failure("TestCompilationFailure" fail/borrower_not_deletable.cpp "'__is_invocable<marcpawl::pointers::NonDeletable")
 test_compile_failure(
 	"TestCompilationFailure" 
 	borrower_not_null_default_constructor.cpp
