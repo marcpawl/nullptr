@@ -296,15 +296,6 @@ namespace pointers {
 #endif// !defined(MP_NO_IOSTREAMS)
 
 
-#if 0
-template<typename T,
-typename U>
-requires(::marcpawl::pointers::details::Comparable<T, U>)
-auto operator<(wrapped_pointer<T> const &lhs,  wrapped_pointer<U> const &rhs) noexcept
-{
-return lhs.get() < rhs.get();
-}
-#endif
 
 #ifdef TODO
   template<typename T, typename U>
@@ -368,24 +359,10 @@ return lhs.get() < rhs.get();
     template<Pointer U>
     constexpr explicit strict_not_null(U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
-      : wrapped_pointer<T>(u)
+      : wrapped_pointer<T>(std::move(u))
     {
       if (this->ptr_ == nullptr) { throw nullptr_exception(); }
     }
-
-
-  private:
-    // Used to indicate that the is no construction from a pointer.
-    struct privileged
-    {
-    };
-
-    template<typename U,
-      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    constexpr strict_not_null(privileged const &, U &&u) noexcept(
-      std::is_nothrow_move_constructible<T>::value)
-      : wrapped_pointer<T>(std::move(u))
-    {}
 
 
   public:
@@ -513,8 +490,7 @@ return lhs.get() < rhs.get();
       if (this->ptr_ == nullptr) {
         return std::nullopt;
       } else {
-        typename strict_not_null<T>::privileged privileged;
-        strict_not_null<T> ptr{ privileged, this->ptr_ };
+        strict_not_null<T> ptr{ this->ptr_ };
         return optional_not_null{ ptr };
       }
     }
@@ -524,8 +500,7 @@ return lhs.get() < rhs.get();
       if (this->ptr_ == nullptr) {
         return std::nullopt;
       } else {
-        typename strict_not_null<T>::privileged privileged;
-        strict_not_null<T> ptr{ privileged, std::move(this->ptr_) };
+        strict_not_null<T> ptr{ std::move(this->ptr_) };
         return optional_not_null{ std::move(ptr) };
       }
     }
@@ -535,24 +510,18 @@ return lhs.get() < rhs.get();
       if (this->ptr_ == nullptr) {
         return nullptr;
       } else {
-        typename strict_not_null<T>::privileged privileged;
-        strict_not_null<T> ptr{ privileged, this->ptr_ };
+        strict_not_null<T> ptr{ this->ptr_ };
         return ptr;
       }
     }
 
     [[nodiscard]] constexpr auto visit(nullptr_handler auto handle_nullptr,
       not_null_handler<T> auto handle_not_null) const
-      noexcept(noexcept(handle_nullptr(nullptr))
-               && noexcept(handle_not_null(
-                 strict_not_null<T>{ typename strict_not_null<T>::privileged{},
-                   nullptr })))
     {
       if (this->ptr_ == nullptr) {
         return handle_nullptr(nullptr);
       } else {
-        typename strict_not_null<T>::privileged privileged;
-        strict_not_null<T> ptr{ privileged, this->ptr_ };
+        strict_not_null<T> ptr{ this->ptr_ };
         return handle_not_null(std::move(ptr));
       }
     }

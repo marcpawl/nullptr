@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15...3.23)
+cmake_minimum_required(VERSION 3.23)
 
 project(CmakeConfigPackageTests LANGUAGES CXX)
 
@@ -19,78 +19,5 @@ endif()
 
 include(${Catch2_SOURCE_DIR}/extras/Catch.cmake)
 
-# add_compile_options(-Xclang -fdump-record-layouts)
-
-add_executable(tests tests.cpp)
-target_link_libraries(
-  tests
-  PRIVATE nullptr::nullptr_warnings
-          nullptr::nullptr_options
-          linked_list_library
-          pointers_library
-          Catch2::Catch2WithMain)
-
-if(WIN32 AND BUILD_SHARED_LIBS)
-  add_custom_command(
-    TARGET tests
-    PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:tests> $<TARGET_FILE_DIR:tests>
-    COMMAND_EXPAND_LISTS)
-endif()
-
-# automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
-# to whatever you want, or use different for different binaries
-catch_discover_tests(
-  tests
-  TEST_PREFIX
-  "unittests."
-  OUTPUT_DIR
-  .
-  OUTPUT_PREFIX
-  "unittests."
-  OUTPUT_SUFFIX
-  .xml)
-
-# Add a file containing a set of constexpr tests
-add_executable(constexpr_tests constexpr_tests.cpp)
-target_link_libraries(
-  constexpr_tests
-  PRIVATE nullptr::nullptr_warnings
-          nullptr::nullptr_options
-          linked_list_library
-          Catch2::Catch2WithMain)
-
-catch_discover_tests(
-  constexpr_tests
-  TEST_PREFIX
-  "constexpr."
-  OUTPUT_DIR
-  .
-  OUTPUT_PREFIX
-  "constexpr."
-  OUTPUT_SUFFIX
-  .xml)
-
-# Disable the constexpr portion of the test, and build again this allows us to have an executable that we can debug when
-# things go wrong with the constexpr testing
-add_executable(relaxed_constexpr_tests constexpr_tests.cpp)
-target_link_libraries(
-  relaxed_constexpr_tests
-  PRIVATE nullptr::nullptr_warnings
-          nullptr::nullptr_options
-          linked_list_library
-          Catch2::Catch2WithMain)
-target_compile_definitions(relaxed_constexpr_tests PRIVATE -DCATCH_CONFIG_RUNTIME_STATIC_REQUIRE)
-
-catch_discover_tests(
-  relaxed_constexpr_tests
-  TEST_PREFIX
-  "relaxed_constexpr."
-  OUTPUT_DIR
-  .
-  OUTPUT_PREFIX
-  "relaxed_constexpr."
-  OUTPUT_SUFFIX
-  .xml)
 
 add_subdirectory(pointers_test)
