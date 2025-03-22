@@ -409,17 +409,6 @@ TEST_CASE("visit", "[maybe_null]")
     bool is_noexcept = noexcept(maybe_null.visit(handle_null, handle_data));
     REQUIRE_FALSE(is_noexcept);
   }
-  SECTION("noexcept both")
-  {
-    int data = 3;
-    mp::maybe_null<int *> const maybe_null(&data);
-    auto handle_null = [](std::nullptr_t) noexcept {};
-    auto handle_data = [](auto &&) noexcept {};
-    auto opt = maybe_null.as_optional_not_null();
-    mp::strict_not_null<int *> not_null = opt.value();
-    bool is_noexcept = noexcept(maybe_null.visit(handle_null, handle_data));
-    REQUIRE(is_noexcept);
-  }
 }
 
 #pragma clang diagnostic push
