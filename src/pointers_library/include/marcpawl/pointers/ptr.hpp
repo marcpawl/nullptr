@@ -9,6 +9,7 @@
 #if !defined(MP_NO_IOSTREAMS)
 #include <iostream>
 #endif
+#include <memory>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -44,6 +45,16 @@ namespace pointers {
     concept Comparable = requires(T a, U b) {
       { a < b } -> std::convertible_to<bool>;
     };
+
+    template <typename T>
+concept IsUniquePtr = requires {
+    typename T::element_type; // Check if T has an element_type (std::unique_ptr has this)
+} && std::is_same_v<T, std::unique_ptr<typename T::element_type>>;
+
+template <typename T>
+concept IsSharedPtr = requires {
+    typename T::element_type; // Check if T has an element_type (std::shared_ptr has this)
+} && std::is_same_v<T, std::shared_ptr<typename T::element_type>>;
 
 
   }// namespace details
@@ -605,6 +616,12 @@ namespace pointers {
 
     explicit borrower(T ptr) : wrapped_pointer<T>(ptr) {}
 
+    explicit borrower(std::unique_ptr<std::remove_pointer_t<T>> const& ptr) 
+	    : wrapped_pointer<T>(ptr.get()) {}
+
+      explicit borrower(std::shared_ptr<std::remove_pointer_t<T>> const& ptr) 
+	    : wrapped_pointer<T>(ptr.get()) {}
+
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     borrower(borrower<U> const &other) noexcept
@@ -654,10 +671,27 @@ namespace pointers {
   };
 
   template<Pointer T> inline borrower<T> make_borrower(T ptr)
+requires( (! details::IsUniquePtr<T>) && (! details::IsSharedPtr<T>));
+
+  template<typename T>
+  auto make_borrower(
+			  std::unique_ptr<std::remove_pointer_t<T>>& ptr) -> borrower<T>
+        {
+    return make_borrower(ptr.get());
+  }
+
+  template<Pointer T>
+  auto make_borrower(
+			  std::shared_ptr<std::remove_pointer_t<T>> const& ptr) -> borrower<T>
+  {
+    return make_borrower(ptr.get());
+  }
+
+  template<Pointer T> inline borrower<T> make_borrower(T ptr)
+requires( (! details::IsUniquePtr<T>) && (! details::IsSharedPtr<T>))
   {
     return borrower<T>(ptr);
   }
-
 
   ////////////////////////////////////////////////////////////////////////////
   //

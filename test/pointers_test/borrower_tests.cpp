@@ -40,7 +40,14 @@ TEST_CASE("explicit constructor", "[borrower]")
   SECTION("from unique_ptr")
   {
     std::unique_ptr<int> owner2 = std::make_unique<int>(4);
-    mp::borrower<int *> const borrower2 = mp::make_borrower(owner2.get());
+    mp::borrower<int *> const borrower2 {owner2};
+    REQUIRE((borrower2.get() != nullptr));
+    REQUIRE((*borrower2.get() == 4));
+  }
+  SECTION("from shared_ptr")
+  {
+    std::shared_ptr<int> owner2 = std::make_shared<int>(4);
+    mp::borrower<int *> const borrower2 {owner2};
     REQUIRE((borrower2.get() != nullptr));
     REQUIRE((*borrower2.get() == 4));
   }
@@ -195,12 +202,28 @@ TEST_CASE("dereference operator", "[borrower]")
 
 TEST_CASE("make_borrower", "[borrower]")
 {
+  SECTION("From pointer") {
   gsl::owner<Child *> owner0{ new Child() };
   mp::borrower<Parent *> const borrower1 = mp::make_borrower<Parent *>(owner0);
   REQUIRE((borrower1.get() == owner0));
   mp::borrower<Parent *> const borrower2 = mp::make_borrower<Parent *>(owner0);
   REQUIRE((borrower2.get() == owner0));
   delete owner0;
+  }
+  SECTION("from unique_ptr")
+  {
+    std::unique_ptr<int> owner2 = std::make_unique<int>(4);
+    mp::borrower<int *> const borrower2 = mp::make_borrower<int*>(owner2);
+    REQUIRE((borrower2.get() != nullptr));
+    REQUIRE((*borrower2.get() == 4));
+  }
+  SECTION("from shared_ptr")
+  {
+    std::shared_ptr<int> owner2 = std::make_shared<int>(4);
+    mp::borrower<int *> const borrower2 = mp::make_borrower<int*>(owner2);
+    REQUIRE((borrower2.get() != nullptr));
+    REQUIRE((*borrower2.get() == 4));
+  }
 }
 
 #if !defined(GSL_NO_IOSTREAMS)
