@@ -30,12 +30,30 @@ TEST_CASE("make_owner", "[owner]")
   }
   SECTION("nullptr")
   {
-// TODO
-#if 0
     mp::owner<Parent *> const owner = mp::make_owner<Parent *>(nullptr);
     REQUIRE(owner == nullptr);
-#endif
   }
 }
+
+static void neighbor(mp::borrower<int *> nails) { --(*nails); }
+
+TEST_CASE("to_borrower", "[owner]")
+{
+  SECTION("as_borrower")
+  {
+    int box = 43;
+    mp::owner<int *> nails{ &box };
+    neighbor(nails.as_borrower());
+    REQUIRE((box == 42));
+  }
+  SECTION("borrower constructor")
+  {
+    int box = 43;
+    mp::owner<int *> nails{ &box };
+    neighbor(mp::borrower<int *>(nails));
+    REQUIRE((box == 42));
+  }
+}
+
 
 // NOLINTEND (cppcoreguidelines-avoid-magic-numbers)

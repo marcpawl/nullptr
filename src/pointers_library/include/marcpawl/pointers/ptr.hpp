@@ -65,13 +65,12 @@ namespace pointers {
   concept Nullable = requires(T t) { t = nullptr; };
 
   template<typename T>
-  concept VoidComparable = requires(T t, void* p) 
-  {
-	  t == p;
-  };
+  concept VoidComparable = requires(T t, void *p) { t == p; };
 
   template<Pointer T> class maybe_null;
   template<Pointer T> class strict_not_null;
+  template<Pointer T> class owner;
+  template<Pointer T> class borrower;
 
   template<typename F>
   concept nullptr_handler = std::invocable<F, std::nullptr_t>;
@@ -120,13 +119,15 @@ namespace pointers {
 
   public:
     wrapped_pointer() : ptr_(nullptr) {}
-    wrapped_pointer(T const& ptr) 
-	    requires std::is_copy_constructible_v<T>
-	    : ptr_(ptr) {}
+    wrapped_pointer(T const &ptr)
+      requires std::is_copy_constructible_v<T>
+      : ptr_(ptr)
+    {}
 
-    wrapped_pointer(T&& ptr) 
-	    requires std::is_move_constructible_v<T>
-	    : ptr_(std::move(ptr)) {}
+    wrapped_pointer(T &&ptr)
+      requires std::is_move_constructible_v<T>
+      : ptr_(std::move(ptr))
+    {}
 
     // Use get().  Deleted to avoid conversion to raw pointer,
     // and then construction into a different wrapped pointer
@@ -230,12 +231,12 @@ namespace pointers {
   }
 
   template<typename T>
-	  requires VoidComparable<T>
+    requires VoidComparable<T>
   [[nodiscard]] auto operator==(wrapped_pointer<T> const &lhs,
     void const *const rhs);
 
   template<typename T>
-	  requires VoidComparable<T>
+    requires VoidComparable<T>
   [[nodiscard]] auto operator==(void const *const lhs,
     wrapped_pointer<T> const &rhs);
 
@@ -249,7 +250,7 @@ namespace pointers {
   }
 
   template<typename T>
-	  requires VoidComparable<T>
+    requires VoidComparable<T>
   [[nodiscard]] auto operator==(wrapped_pointer<T> const &lhs,
     void const *const rhs)
   {
@@ -258,7 +259,7 @@ namespace pointers {
 
 
   template<typename T>
-	  requires VoidComparable<T>
+    requires VoidComparable<T>
   [[nodiscard]] auto operator==(void const *const lhs,
     wrapped_pointer<T> const &rhs)
   {
@@ -294,7 +295,6 @@ namespace pointers {
     return os;
   }
 #endif// !defined(MP_NO_IOSTREAMS)
-
 
 
 #ifdef TODO
@@ -367,12 +367,12 @@ namespace pointers {
 
   public:
     constexpr strict_not_null(strict_not_null<T> const &other)
-	    requires std::is_copy_constructible_v<T>
+      requires std::is_copy_constructible_v<T>
       : wrapped_pointer<T>(other.ptr_)
     {}
 
     constexpr strict_not_null(strict_not_null<T> &&other)
-	    requires std::is_move_constructible_v<T>
+      requires std::is_move_constructible_v<T>
       : wrapped_pointer<T>(std::move(other.ptr_))
     {}
 
@@ -445,14 +445,14 @@ namespace pointers {
     /** Construct from a pointer. */
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
-    explicit constexpr maybe_null(U const &u) 
+    explicit constexpr maybe_null(U const &u)
       requires std::is_copy_constructible_v<T>
       : wrapped_pointer<T>(u)
     {}
 
     /** Construct from a pointer. */
-    explicit constexpr maybe_null(T &&t) 
-    requires std::is_move_constructible_v<T>
+    explicit constexpr maybe_null(T &&t)
+      requires std::is_move_constructible_v<T>
       : wrapped_pointer<T>(std::move(t))
     {}
 
@@ -485,7 +485,7 @@ namespace pointers {
     maybe_null &operator=(maybe_null const &other) = default;
     maybe_null &operator=(maybe_null &&other) = default;
 
-    [[nodiscard]] constexpr optional_not_null as_optional_not_null() const&
+    [[nodiscard]] constexpr optional_not_null as_optional_not_null() const &
     {
       if (this->ptr_ == nullptr) {
         return std::nullopt;
@@ -622,6 +622,10 @@ namespace pointers {
       // Borrower cannot move pointer to owner.
     }
 
+    template<Pointer U>
+    explicit borrower(owner<U> const &other)
+      requires(std::is_convertible<U, T>::value);
+
     ~borrower() = default;
 
     template<typename U,
@@ -732,6 +736,13 @@ namespace pointers {
   {
     return owner<T>(ptr);
   }
+
+  template<Pointer T>
+  template<Pointer U>
+  borrower<T>::borrower(owner<U> const &theOwner)
+    requires(std::is_convertible<U, T>::value)
+    : wrapped_pointer<T>(theOwner.ptr_)
+  {}
 
   template<class T, std::enable_if_t<std::is_pointer<T>::value, bool> = true>
   using nonowner = T;

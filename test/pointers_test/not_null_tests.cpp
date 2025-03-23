@@ -172,36 +172,38 @@ TEST_CASE("move constructor", "[not_null]")
 
 TEST_CASE("unique_ptr", "[not_null]")
 {
-  SECTION("not null") {
-  std::unique_ptr<int> data = std::make_unique<int>(4);
-  mp::maybe_null<std::unique_ptr<int>>  source{ std::move(data) };
-  auto opt = std::move(source).as_optional_not_null();
-  REQUIRE(opt.has_value());
-  mp::strict_not_null<std::unique_ptr<int>> const &not_null = opt.value();
-  int const actual = *not_null;
-  REQUIRE(4 == actual);
+  SECTION("not null")
+  {
+    std::unique_ptr<int> data = std::make_unique<int>(4);
+    mp::maybe_null<std::unique_ptr<int>> source{ std::move(data) };
+    auto opt = std::move(source).as_optional_not_null();
+    REQUIRE(opt.has_value());
+    mp::strict_not_null<std::unique_ptr<int>> const &not_null = opt.value();
+    int const actual = *not_null;
+    REQUIRE(4 == actual);
   }
 #ifdef TODO
-  SECTION("constructing nullptr") {
+  SECTION("constructing nullptr")
+  {
     std::unique_ptr<int> data = std::make_unique<int>();
-    mp::maybe_null<std::unique_ptr<int>> const source{ std::move( data) };
-//    auto opt = source.as_optional_not_null();
-  //  REQUIRE(opt.has_value());
-    //mp::strict_not_null<std::unique_ptr<int>> const &not_null = opt.value();
+    mp::maybe_null<std::unique_ptr<int>> const source{ std::move(data) };
+    //    auto opt = source.as_optional_not_null();
+    //  REQUIRE(opt.has_value());
+    // mp::strict_not_null<std::unique_ptr<int>> const &not_null = opt.value();
   }
-  #ifdef TODO
+#ifdef TODO
   // MOVE TO COMPILE TIME ERROR
-  SECTION("assigning nullptr") {
+  SECTION("assigning nullptr")
+  {
     std::unique_ptr<int> data = std::make_unique<int>(4);
     mp::maybe_null<std::unique_ptr<int>> const source{ data };
     auto opt = source.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<std::unique_ptr<int>> const &not_null = opt.value();
-     not_null = nullptr;     
+    not_null = nullptr;
   }
-  #endif
-  #endif
-
+#endif
+#endif
 }
 
 
