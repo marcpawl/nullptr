@@ -46,31 +46,37 @@ namespace pointers {
       { a < b } -> std::convertible_to<bool>;
     };
 
-    template <typename T>
-concept IsUniquePtr = requires {
-    typename T::element_type; // Check if T has an element_type (std::unique_ptr has this)
-} && std::is_same_v<T, std::unique_ptr<typename T::element_type>>;
+    template<typename T>
+    concept IsUniquePtr = requires {
+      typename T::element_type;// Check if T has an element_type
+                               // (std::unique_ptr has this)
+    } && std::is_same_v<T, std::unique_ptr<typename T::element_type>>;
 
-template <typename T>
-concept IsSharedPtr = requires {
-    typename T::element_type; // Check if T has an element_type (std::shared_ptr has this)
-} && std::is_same_v<T, std::shared_ptr<typename T::element_type>>;
+    template<typename T>
+    concept IsSharedPtr = requires {
+      typename T::element_type;// Check if T has an element_type
+                               // (std::shared_ptr has this)
+    } && std::is_same_v<T, std::shared_ptr<typename T::element_type>>;
 
+    template<typename T>
+    concept Pointer = requires(T p) {
+      *p;// T must be dereferenceable
+      {
+        p == nullptr
+      } -> std::convertible_to<bool>;// T must be comparable to nullptr
+    };
+
+    template<typename T>
+    concept not_nullptr =
+      !std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>,
+        std::nullptr_t>;
+
+    template<typename T>
+    concept IsUnManagedPtr =
+      Pointer<T> && (!IsUniquePtr<T>) && (!IsSharedPtr<T>) && not_nullptr<T>;
 
   }// namespace details
 
-  template<typename T>
-  concept not_nullptr =
-    !std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>,
-      std::nullptr_t>;
-
-  template<typename T>
-  concept Pointer = requires(T p) {
-    *p;// T must be dereferenceable
-    {
-      p == nullptr
-    } -> std::convertible_to<bool>;// T must be comparable to nullptr
-  };
 
   template<typename T>
   concept Nullable = requires(T t) { t = nullptr; };
@@ -78,10 +84,10 @@ concept IsSharedPtr = requires {
   template<typename T>
   concept VoidComparable = requires(T t, void *p) { t == p; };
 
-  template<Pointer T> class maybe_null;
-  template<Pointer T> class strict_not_null;
-  template<Pointer T> class owner;
-  template<Pointer T> class borrower;
+  template<details::Pointer T> class maybe_null;
+  template<details::Pointer T> class strict_not_null;
+  template<details::Pointer T> class owner;
+  template<details::Pointer T> class borrower;
 
   template<typename F>
   concept nullptr_handler = std::invocable<F, std::nullptr_t>;
@@ -89,7 +95,7 @@ concept IsSharedPtr = requires {
   template<typename F, typename T>
   concept not_null_handler = std::invocable<F, strict_not_null<T>>;
 
-  template<Pointer T> class wrapped_pointer;
+  template<details::Pointer T> class wrapped_pointer;
 
 
   // Define a concept that checks if U is not a wrapped_pointer or derived from
@@ -123,7 +129,8 @@ concept IsSharedPtr = requires {
     ~wrapped_pointer_base() = default;
   };
 
-  template<Pointer T> class wrapped_pointer : public wrapped_pointer_base
+  template<details::Pointer T>
+  class wrapped_pointer : public wrapped_pointer_base
   {
   public:
     T ptr_;
@@ -361,13 +368,13 @@ concept IsSharedPtr = requires {
   //   - remove unnecessary asserts
   //
   ////////////////////////////////////////////////////////////////////////////
-  template<Pointer T> class strict_not_null : public wrapped_pointer<T>
+  template<details::Pointer T> class strict_not_null : public wrapped_pointer<T>
   {
 
   public:
     strict_not_null() = delete;
 
-    template<Pointer U>
+    template<details::Pointer U>
     constexpr explicit strict_not_null(U &&u) noexcept(
       std::is_nothrow_move_constructible<T>::value)
       : wrapped_pointer<T>(std::move(u))
@@ -411,7 +418,7 @@ concept IsSharedPtr = requires {
     constexpr decltype(auto) operator*() const { return *(this->get()); }
 
 
-    template<Pointer U> friend class maybe_null;
+    template<details::Pointer U> friend class maybe_null;
   };
 
 
@@ -441,7 +448,7 @@ concept IsSharedPtr = requires {
   // - allow implicit conversion to U*
   //
   ////////////////////////////////////////////////////////////////////////////
-  template<Pointer T> class maybe_null : public wrapped_pointer<T>
+  template<details::Pointer T> class maybe_null : public wrapped_pointer<T>
   {
   public:
     using optional_not_null = std::optional<strict_not_null<T>>;
@@ -567,7 +574,7 @@ concept IsSharedPtr = requires {
       return *get();
     }
 
-    template<Pointer U> friend class maybe_null;
+    template<details::Pointer U> friend class maybe_null;
   };
 
 
@@ -602,7 +609,7 @@ concept IsSharedPtr = requires {
   // based on gsl::not_null
   ////////////////////////////////////////////////////////////////////////////
 
-  template<Pointer T> class borrower : public wrapped_pointer<T>
+  template<details::Pointer T> class borrower : public wrapped_pointer<T>
   {
   public:
     explicit borrower()
@@ -614,13 +621,22 @@ concept IsSharedPtr = requires {
       : wrapped_pointer<T>(nullptr)
     {}
 
-    explicit borrower(T ptr) : wrapped_pointer<T>(ptr) {}
+    template<details::IsUnManagedPtr U,
+      typename = std::enable_if_t<std::is_convertible<U, T>::value>>
+    explicit borrower(U ptr) : wrapped_pointer<T>(ptr)
+    {}
 
-    explicit borrower(std::unique_ptr<std::remove_pointer_t<T>> const& ptr) 
-	    : wrapped_pointer<T>(ptr.get()) {}
+    template<details::IsUniquePtr U,
+      typename =
+        std::enable_if_t<std::is_convertible<typename U::pointer, T>::value>>
+    explicit borrower(U const &ptr) : wrapped_pointer<T>(ptr.get())
+    {}
 
-      explicit borrower(std::shared_ptr<std::remove_pointer_t<T>> const& ptr) 
-	    : wrapped_pointer<T>(ptr.get()) {}
+    template<details::IsSharedPtr U,
+      typename = std::enable_if_t<
+        std::is_convertible<typename U::element_type *, T>::value>>
+    explicit borrower(U const &ptr) : wrapped_pointer<T>(ptr.get())
+    {}
 
     template<typename U,
       typename = std::enable_if_t<std::is_convertible<U, T>::value>>
@@ -639,7 +655,7 @@ concept IsSharedPtr = requires {
       // Borrower cannot move pointer to owner.
     }
 
-    template<Pointer U>
+    template<details::Pointer U>
     explicit borrower(owner<U> const &other)
       requires(std::is_convertible<U, T>::value);
 
@@ -667,31 +683,36 @@ concept IsSharedPtr = requires {
 #endif
 
 
-    template<Pointer U> friend inline borrower<U> make_borrower(U ptr);
+    template<details::Pointer U> friend inline borrower<U> make_borrower(U ptr);
   };
 
-  template<Pointer T> inline borrower<T> make_borrower(T ptr)
-requires( (! details::IsUniquePtr<T>) && (! details::IsSharedPtr<T>));
+  // deduction guides to prevent the ctad-maybe-unsupported warning
+  template<class T> borrower(T) -> borrower<T>;
+
+  template<details::IsUnManagedPtr U> auto make_borrower(U ptr)
+  {
+    return borrower<U>{ ptr };
+  }
 
   template<typename T>
-  auto make_borrower(
-			  std::unique_ptr<std::remove_pointer_t<T>>& ptr) -> borrower<T>
-        {
-    return make_borrower(ptr.get());
+  [[nodiscard]] constexpr auto make_borrower(owner<T> const &theOwner)
+    -> borrower<T>
+  {
+    return theOwner.as_borrower();
   }
 
-  template<Pointer T>
-  auto make_borrower(
-			  std::shared_ptr<std::remove_pointer_t<T>> const& ptr) -> borrower<T>
+  template<details::IsUniquePtr U>
+  auto make_borrower(U const &ptr) -> borrower<typename U::pointer>
   {
     return make_borrower(ptr.get());
   }
 
-  template<Pointer T> inline borrower<T> make_borrower(T ptr)
-requires( (! details::IsUniquePtr<T>) && (! details::IsSharedPtr<T>))
+  template<details::IsSharedPtr U>
+  auto make_borrower(U const &ptr) -> borrower<typename U::element_type *>
   {
-    return borrower<T>(ptr);
+    return make_borrower(ptr.get());
   }
+
 
   ////////////////////////////////////////////////////////////////////////////
   //
@@ -712,7 +733,7 @@ requires( (! details::IsUniquePtr<T>) && (! details::IsSharedPtr<T>))
   ////////////////////////////////////////////////////////////////////////////
 
 
-  template<Pointer T> class owner : public wrapped_pointer<T>
+  template<details::Pointer T> class owner : public wrapped_pointer<T>
   {
   public:
     explicit owner()
@@ -751,9 +772,9 @@ requires( (! details::IsUniquePtr<T>) && (! details::IsSharedPtr<T>))
     constexpr operator bool() const { return this->get() != nullptr; }
 #endif
 
-    borrower<T> as_borrower() const { return borrower<T>(this->get()); }
+    borrower<T> as_borrower() const { return make_borrower(this->get()); }
 
-    template<Pointer U> friend inline owner<U> make_owner(U ptr);
+    template<details::Pointer U> friend inline owner<U> make_owner(U ptr);
   };
 
 
@@ -766,13 +787,13 @@ requires( (! details::IsUniquePtr<T>) && (! details::IsSharedPtr<T>))
   }
 #endif// !defined(MP_NO_IOSTREAMS)
 
-  template<Pointer T> inline owner<T> make_owner(T ptr)
+  template<details::Pointer T> inline owner<T> make_owner(T ptr)
   {
     return owner<T>(ptr);
   }
 
-  template<Pointer T>
-  template<Pointer U>
+  template<details::Pointer T>
+  template<details::Pointer U>
   borrower<T>::borrower(owner<U> const &theOwner)
     requires(std::is_convertible<U, T>::value)
     : wrapped_pointer<T>(theOwner.ptr_)

@@ -66,7 +66,7 @@ TEST_CASE("operator==", "[not_null]")
     auto opt = maybe_null.as_optional_not_null();
     REQUIRE(opt.has_value());
     mp::strict_not_null<int *> const &not_null = opt.value();
-    mp::not_nullptr auto pdata = &data;
+    mp::details::not_nullptr auto pdata = &data;
     bool eq = (not_null == pdata);
     REQUIRE(eq);
     bool eqr = (&data == not_null);
