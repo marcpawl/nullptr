@@ -11,4 +11,5 @@ target_link_libraries(pointers_library PUBLIC GSL)
 target_include_directories(pointers_library PUBLIC include)
 
 #target_clangformat_setup(pointers_library)
+include(ClangFormat)
 clangformat_setup( include/marcpawl/pointers/* )
